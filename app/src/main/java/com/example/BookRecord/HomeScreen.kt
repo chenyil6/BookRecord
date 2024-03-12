@@ -73,7 +73,8 @@ fun HomeScreen(
     Scaffold(
         floatingActionButton = {
             SmallAddButton(onClick = {
-                // 在这里定义点击悬浮按钮后的动作，比如打开添加图书的界面
+                navController.navigate("AddBooks")
+            // 在这里定义点击悬浮按钮后的动作，比如打开添加图书的界面
             })
         },
         floatingActionButtonPosition = FabPosition.End, // 将按钮放在右下角
