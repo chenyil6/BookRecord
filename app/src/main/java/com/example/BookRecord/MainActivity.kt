@@ -24,8 +24,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-
-
+import com.example.BookRecord.ui.theme.AnalyticsScreen
+import com.example.BookRecord.ui.theme.BookRecordTheme
 
 
 class MainActivity : ComponentActivity() {
@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
-    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen")
+    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks")
 
     Scaffold(
         bottomBar = { if (shouldShowBottomBar) {
@@ -53,14 +53,18 @@ fun AppNavigation() {
         // 利用提供的 innerPadding 参数调整内容的内边距
         NavHost(
             navController = navController,
-            startDestination = "Book",
+            startDestination = "LoginScreen",
             modifier = Modifier.padding(innerPadding) // 应用内边距
         ) {
+            composable("LoginScreen") {
+                LoginScreen(navController, modifier = Modifier.fillMaxSize())
+            }
             composable("Book") { HomeScreen(navController,modifier = Modifier.fillMaxSize()) }
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
-            composable("Analysis"){Chart(modifier = Modifier.fillMaxSize()) }
+            composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("notesScreen"){NotesScreen(navController,modifier = Modifier.fillMaxSize()) }
             composable("EditNotesScreen"){EditNotesScreen(navController,modifier = Modifier.fillMaxSize()) }
+            composable("AddBooks"){ AddBookScreen(navController) }
         }
     }
 }
