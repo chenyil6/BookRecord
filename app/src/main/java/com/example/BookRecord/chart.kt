@@ -161,24 +161,25 @@ fun AnalyticsPage() {
             timeRange = selectedRange
         }
         BarChart(if (timeRange == "近7天") readingData7Days else readingData30Days)
-        Spacer(modifier = Modifier.height(15.dp)) // 添加间隔
+        Spacer(modifier = Modifier.height(10.dp)) // 添加间隔
         Text(
             text = "$timeRange 总阅读页数: $totalPages",
             style = MaterialTheme.typography.h6,
+            fontSize = 15.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-        Spacer(modifier = Modifier.height(60.dp)) // 标题和扇形图之间的间隔
+        Spacer(modifier = Modifier.height(20.dp)) // 标题和扇形图之间的间隔
         Text(
             "📖 书架分布统计",
             style = MaterialTheme.typography.h6,
             color = Color(0xFF01051D),
             modifier = Modifier.align(Alignment.Start) //
         )
-        Spacer(modifier = Modifier.height(30.dp)) // 标题和扇形图之间的间隔
+        Spacer(modifier = Modifier.height(15.dp)) // 标题和扇形图之间的间隔
         PieChart(
             data = bookShelfData,
             modifier = Modifier
-                .size(250.dp) // 设置扇形图的尺寸
+                .size(230.dp) // 设置扇形图的尺寸
                 .align(Alignment.CenterHorizontally) // 扇形图居中对齐
         )
     }
