@@ -216,21 +216,22 @@ fun Books(navController: NavController, names: List<String>, modifier: Modifier 
                             .padding(start = 15.dp,top = 72.dp)
                         ){
                             Column(
-                                modifier = Modifier.weight(4f)
+                                modifier = Modifier.weight(3.5f)
                             ) {
-                                Text(text = "From 2024/03/08", fontSize = 12.sp)
+                                Text(text = "From", fontSize = 12.sp)
+                                Text(text = "2024/03/08", fontSize = 12.sp)
+
                             }
                             Column(
                                 modifier = Modifier
-                                    .weight(2f)
-                                    .padding(start = 10.dp)
+                                    .weight(2.5f)
                             ) {
-                                Text(text = "7 days", fontSize = 12.sp)
+                                Text(text = "7", fontSize = 12.sp)
+                                Text(text = "days", fontSize = 12.sp)
                             }
                             Column(
                                 modifier = Modifier
                                     .weight(4f)
-                                    .padding(start = 6.dp)
                             ){
                                 Row(){
                                     InputPageNumberDialogButton()
