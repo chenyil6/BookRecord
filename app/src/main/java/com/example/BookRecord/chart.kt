@@ -322,11 +322,11 @@ fun AnalyticsPage() {
 
     // State for the total pages read.
     val totalPages by remember { mutableStateOf(calculateTotalPages()) }
-//    val scrollState = rememberScrollState()//创建可滚动状态
+    val scrollState = rememberScrollState()//创建可滚动状态
 
     Column(modifier = Modifier
         .fillMaxSize()
-        .padding(15.dp)
+        .padding(15.dp).verticalScroll(scrollState)
         ) { // 加上padding使内容不要紧贴屏幕边缘
         androidx.compose.material3.Text(
             text = "Reading Statistics",
