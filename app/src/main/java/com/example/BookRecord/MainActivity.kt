@@ -25,15 +25,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.BookRecord.ui.theme.AnalyticsScreen
-import com.example.BookRecord.ui.theme.BookRecordTheme
+import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // 底部导航Tab
-            AppNavigation()
+            val notesViewModel: NoteViewModel by viewModels()
+            // 使用CompositionLocalProvider提供ViewModel
+            CompositionLocalProvider(LocalNotesViewModel provides notesViewModel) {
+                AppNavigation()
+            }
         }
     }
 }
@@ -44,7 +48,6 @@ fun AppNavigation() {
     val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
     val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks")
-
     Scaffold(
         bottomBar = { if (shouldShowBottomBar) {
                         BottomNavigationBar(navController) }
@@ -63,7 +66,7 @@ fun AppNavigation() {
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
             composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("notesScreen"){NotesScreen(navController,modifier = Modifier.fillMaxSize()) }
-            composable("EditNotesScreen"){EditNotesScreen(navController,modifier = Modifier.fillMaxSize()) }
+            composable("EditNotesScreen") { EditNotesScreen(navController,modifier = Modifier.fillMaxSize()) }
             composable("AddBooks"){ AddBookScreen(navController) }
         }
     }

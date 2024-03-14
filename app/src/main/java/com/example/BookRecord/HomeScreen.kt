@@ -241,8 +241,6 @@ fun Books(navController: NavController, names: List<String>, modifier: Modifier 
                                 }
                             }
                         }
-
-
                     }
                 }
             }

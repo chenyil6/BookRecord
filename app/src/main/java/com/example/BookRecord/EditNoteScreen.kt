@@ -1,7 +1,5 @@
 package com.example.BookRecord
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -39,16 +37,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
-// 定义一个笔记的数据类
-data class Note(val id: Int, var content: String)
+
+
+
 
 
 @Composable
@@ -57,12 +53,12 @@ fun EditNotesScreen(
     modifier: Modifier = Modifier,
 ){
     var showDialog by remember { mutableStateOf(false) }
-    // 编辑笔记的内容
     var editingContent by remember { mutableStateOf("") }
-    // 保存笔记列表
-    var notes by remember { mutableStateOf(listOf<Note>()) }
-    // 当前正在编辑的笔记
     var currentEditingNoteId by remember { mutableStateOf<Int?>(null) }
+
+    val viewModel = LocalNotesViewModel.current
+
+
     Scaffold(
         floatingActionButton = {
             SmallAddButton(onClick = {
@@ -126,11 +122,11 @@ fun EditNotesScreen(
                             onClick = {
                                 if (currentEditingNoteId == null) {
                                     // 添加新笔记
-                                    notes = notes + Note(id = notes.size + 1, content = editingContent)
+                                    viewModel.addNote(editingContent)
                                 } else {
                                     // 更新现有笔记
-                                    notes = notes.map { note ->
-                                        if (note.id == currentEditingNoteId) note.copy(content = editingContent) else note
+                                    currentEditingNoteId?.let {
+                                        viewModel.editNote(it, editingContent)
                                     }
                                 }
                                 showDialog = false
@@ -143,35 +139,52 @@ fun EditNotesScreen(
                 )
             }
 
-            // 笔记列表
-            Notes(names = notes) { note ->
-                // 设置编辑状态并显示编辑笔记对话框
-                editingContent = note.content
-                currentEditingNoteId = note.id
-                showDialog = true
-            }
+            // 笔记列表...
+            NotesListScreen(
+                notes = viewModel.notes.value,
+                onNoteClick = { note ->
+                    editingContent = note.content
+                    currentEditingNoteId = note.id
+                    showDialog = true
+                },
+                onDeleteClick = { note ->
+                    viewModel.deleteNote(note.id)
+                }
+            )
         }
     }
 
 }
 
-
-
 @Composable
-fun Notes(names: List<Note>, onNoteClick: (Note) -> Unit) {
+fun NotesListScreen(
+    notes: List<Note>,
+    onNoteClick: (Note) -> Unit,
+    onDeleteClick: (Note) -> Unit
+) {
     LazyColumn {
-        items(names, key = { it.id }) { note ->
+        items(items = notes, key = { it.id }) { note ->
             Card(
                 modifier = Modifier
                     .padding(4.dp)
                     .fillMaxWidth()
                     .clickable { onNoteClick(note) },
-            ){
-                Text(
-                    text = note.content,
-                    modifier = Modifier.padding(8.dp)
-                )
+            ) {
+                Row(modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = note.content,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onNoteClick(note) }
+                    )
+                    IconButton(onClick = { onDeleteClick(note) }) { // 当点击删除按钮时，调用 onDeleteClick
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    }
+                }
             }
         }
     }
 }
+
