@@ -18,26 +18,27 @@ data class Book(
     var image: String,
     var author: String,
     var pages: String,
-    var status: BookStatus
+    var status: BookStatus,
+    var read_page :Int
 )
 
 class BookViewModel : ViewModel() {
     private var nextId = 1 // 简单的方式来生成唯一ID
-    private val _books: MutableState<List<Book>> = mutableStateOf(emptyList())
-    val books: State<List<Book>> = _books
+    val books: MutableState<List<Book>> = mutableStateOf(emptyList())
 
     val numberOfBooks: Int
-        get() = _books.value.size
+        get() = books.value.size
 
     val numberOfBooksByStatus: Map<BookStatus, Int>
-        get() = _books.value.groupingBy { it.status }.eachCount()
+        get() = books.value.groupingBy { it.status }.eachCount()
 
     fun addBook(
         bookTitle: String,
         bookImage: String,
         author: String,
         pages: String,
-        status: BookStatus
+        status: BookStatus,
+        read_page: Int
     ) {
         val newBook = Book(
             id = nextId++,
@@ -45,26 +46,48 @@ class BookViewModel : ViewModel() {
             image = bookImage,
             author = author,
             pages = pages,
-            status = status
+            status = status,
+            read_page = read_page
         )
-        _books.value = _books.value + newBook
+        books.value = books.value + newBook
     }
 
     // 获取状态为正在读的书的列表
     fun getReadingBooks(): List<Book> {
-        return _books.value.filter { it.status == BookStatus.READING }
+        return books.value.filter { it.status == BookStatus.READING }
     }
 
     fun getHaveReadBooks(): List<Book> {
-        return _books.value.filter { it.status == BookStatus.READ }
+        return books.value.filter { it.status == BookStatus.READ }
     }
 
     fun getLayAsideBooks(): List<Book> {
-        return _books.value.filter { it.status == BookStatus.ON_HOLD }
+        return books.value.filter { it.status == BookStatus.ON_HOLD }
     }
 
     fun deleteBook(bookId: Int) {
-        _books.value = _books.value.filterNot { it.id == bookId }
+        books.value = books.value.filterNot { it.id == bookId }
+    }
+
+    fun updateBookStatus(bookId: Int, newStatus: BookStatus) {
+        books.value = books.value.map { book ->
+            if (book.id == bookId) {
+                book.copy(status = newStatus)
+            } else {
+                book
+            }
+        }
+    }
+
+
+    fun updateBookReadPage(bookId: Int, readPage: Int) {
+        books.value = books.value.map { book ->
+            if (book.id == bookId) {
+                book.copy(read_page = readPage)
+            } else {
+                book
+            }
+        }
     }
 }
 

@@ -60,7 +60,6 @@ import androidx.navigation.NavController
 @Composable
 fun HomeScreen(
     navController: NavController,
-    modifier: Modifier = Modifier,
 ){
     // 鼠标的焦点
     val focusManager = LocalFocusManager.current
@@ -138,7 +137,7 @@ fun HomeScreen(
             val filteredBooks = readingBooks.filter { it.title.contains(searchText, ignoreCase = true) }
 
             // 将过滤后的书籍列表传递给 Books 函数
-            Books(navController, books = filteredBooks)
+            Books(navController, books = filteredBooks,bookViewModel = bookViewModel)
         }
     }
 
@@ -147,10 +146,10 @@ fun HomeScreen(
 
 
 @Composable
-fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier) {
+fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel) {
     val context = LocalContext.current
     LazyColumn {
-        items(books) { book -> // 正确使用 names 作为列表
+        items(books) { book -> // 正确使用 books 作为列表
             Card(
                 modifier = Modifier
                     .padding(4.dp)
@@ -181,7 +180,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                         Row(modifier = Modifier
                             .padding(top = 0.dp, start = 15.dp)
                         ){
-                            Text(text = "The Penguin Modern Classics Book", fontSize = 13.sp)
+                            Text(text = book.title, fontSize = 13.sp)
                         }
                         Row(
                             modifier = Modifier
@@ -192,7 +191,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                 modifier = Modifier
                                     .weight(0.5f)
                             ){
-                                ExpandedDropdownMenuExample()
+                                ExpandedDropdownMenuExample(bookViewModel= bookViewModel, book=book)
                             }
                             // 这个column 是一个方形的 button
                             Column(
@@ -242,7 +241,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                     .weight(4f)
                             ){
                                 Row(){
-                                    InputPageNumberDialogButton()
+                                    InputPageNumberDialogButton(bookViewModel=bookViewModel,book = book)
                                     Box(modifier = Modifier.padding(top = 13.dp,start = 2.dp)){
                                         Text(text = "/${book.pages}", fontSize = 12.sp)
                                     }
@@ -258,9 +257,9 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
 }
 
 @Composable
-fun InputPageNumberDialogButton() {
+fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book) {
     var showDialog by remember { mutableStateOf(false) }
-    var pageNumber by remember { mutableStateOf("0") }
+    var pageNumber by remember { mutableStateOf(book.read_page.toString()) }
 
     // Button to show dialog
     Box(modifier = Modifier.padding(top = 5.dp)) {
@@ -308,6 +307,10 @@ fun InputPageNumberDialogButton() {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
+                            pageNumber.toIntOrNull()?.let {
+                                // Here you update the read_page of the book
+                                bookViewModel.updateBookReadPage(book.id, it)
+                            }
                             showDialog = false // Hide dialog when done
                         }
                     ) {
@@ -330,7 +333,7 @@ fun SmallAddButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ExpandedDropdownMenuExample() {
+fun ExpandedDropdownMenuExample(bookViewModel: BookViewModel, book: Book) {
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("reading", "have read","lay aside")
     var selectedIndex by remember { mutableStateOf(0) }
@@ -377,6 +380,11 @@ fun ExpandedDropdownMenuExample() {
                     onClick = {
                         selectedIndex = index
                         expanded = false
+                        // 根据选择的项更新书籍状态
+                        when (index) {
+                            1 -> bookViewModel.updateBookStatus(book.id, BookStatus.READ) // "have read"
+                            2 -> bookViewModel.updateBookStatus(book.id, BookStatus.ON_HOLD) // "lay aside"
+                        }
                     },
                     leadingIcon = {
                         Icon(icons[index], contentDescription = null) // 为每个选项添加对应的图标
