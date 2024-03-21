@@ -34,11 +34,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val notesViewModel: NoteViewModel by viewModels()
-            // 使用CompositionLocalProvider提供ViewModel
-            CompositionLocalProvider(LocalNotesViewModel provides notesViewModel) {
+            val bookViewModel: BookViewModel by viewModels()
+            // 使用CompositionLocalProvider提供ViewModel，使用不同的键
+            CompositionLocalProvider(
+                LocalNotesViewModel provides notesViewModel,
+                LocalBooksViewModel provides bookViewModel
+            ) {
                 AppNavigation()
             }
         }
+
     }
 }
 
@@ -62,7 +67,7 @@ fun AppNavigation() {
             composable("LoginScreen") {
                 LoginScreen(navController, modifier = Modifier.fillMaxSize())
             }
-            composable("Book") { HomeScreen(navController,modifier = Modifier.fillMaxSize()) }
+            composable("Book") { HomeScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
             composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("notesScreen"){NotesScreen(navController,modifier = Modifier.fillMaxSize()) }

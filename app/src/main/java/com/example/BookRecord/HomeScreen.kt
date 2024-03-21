@@ -61,13 +61,17 @@ import androidx.navigation.NavController
 fun HomeScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    names: List<String> = listOf("a", "b", "c", "d", "Book1", "Book1", "Book1", "Book1",
-        "Book1", "Book1", "Book1", "Book1", "Book1", "Book1", "Book1", "Book1")
 ){
     // 鼠标的焦点
     val focusManager = LocalFocusManager.current
     // 搜索文本状态
     var searchText by remember { mutableStateOf("") }
+
+    val bookViewModel = LocalBooksViewModel.current
+
+    // 获取正在读的书籍列表
+    val readingBooks = bookViewModel.getReadingBooks()
+
     // 搜索框和列表布局
     // 使得 Column 可点击，并在点击时清除焦点
     Scaffold(
@@ -130,8 +134,11 @@ fun HomeScreen(
 
                 )
 
-            // 图书列表
-            Books(navController,names = names.filter { it.contains(searchText, ignoreCase = true) })
+            // 基于搜索文本过滤整个书籍列表，而不仅仅是标题
+            val filteredBooks = readingBooks.filter { it.title.contains(searchText, ignoreCase = true) }
+
+            // 将过滤后的书籍列表传递给 Books 函数
+            Books(navController, books = filteredBooks)
         }
     }
 
@@ -140,10 +147,10 @@ fun HomeScreen(
 
 
 @Composable
-fun Books(navController: NavController, names: List<String>, modifier: Modifier = Modifier) {
+fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     LazyColumn {
-        items(names) { name -> // 正确使用 names 作为列表
+        items(books) { book -> // 正确使用 names 作为列表
             Card(
                 modifier = Modifier
                     .padding(4.dp)
@@ -159,6 +166,7 @@ fun Books(navController: NavController, names: List<String>, modifier: Modifier 
                     Box(modifier = Modifier
                         ){
                         Image(
+                            // 把图片替换成 Book.image
                             painter = painterResource(id = R.drawable.book1), // 确保你的图片资源正确
                             contentDescription = "Book Image",
                             modifier = Modifier
@@ -236,7 +244,7 @@ fun Books(navController: NavController, names: List<String>, modifier: Modifier 
                                 Row(){
                                     InputPageNumberDialogButton()
                                     Box(modifier = Modifier.padding(top = 13.dp,start = 2.dp)){
-                                        Text(text = "/190",fontSize = 12.sp)
+                                        Text(text = "/${book.pages}", fontSize = 12.sp)
                                     }
                                 }
                             }

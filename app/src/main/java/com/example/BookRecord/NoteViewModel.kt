@@ -9,6 +9,9 @@ data class Note(var content: String ,val id:Int)
 class NoteViewModel: ViewModel() {
     private var nextId = 1 // 简单的方式来生成唯一ID
     val notes: MutableState<List<Note>> = mutableStateOf(emptyList())
+    // 添加一个计算属性来获取笔记的数量
+    val numberOfNotes: Int
+        get() = notes.value.size
 
     fun addNote(noteContent: String) {
         val newNote = Note(id = nextId++, content = noteContent)
