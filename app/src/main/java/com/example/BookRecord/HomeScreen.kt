@@ -60,6 +60,7 @@ import androidx.navigation.NavController
 @Composable
 fun HomeScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
 ){
     // 鼠标的焦点
     val focusManager = LocalFocusManager.current
