@@ -1,30 +1,53 @@
 package com.example.BookRecord
 
+import android.app.Application
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.switchMap
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-data class Note(var content: String ,val id:Int)
+class NoteViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository: NoteRepository
 
-class NoteViewModel: ViewModel() {
-    private var nextId = 1 // 简单的方式来生成唯一ID
-    val notes: MutableState<List<Note>> = mutableStateOf(emptyList())
-    // 添加一个计算属性来获取笔记的数量
-    val numberOfNotes: Int
-        get() = notes.value.size
+    // 使用 MutableLiveData 来跟踪当前选中的 bookId
+    private val _currentBookId = MutableLiveData<Int>()
 
-    fun addNote(noteContent: String) {
-        val newNote = Note(id = nextId++, content = noteContent)
-        notes.value = notes.value + newNote
+    init {
+        val appDatabase = AppDatabase.getDatabase(application)
+        val notesDao = appDatabase.noteDao()
+        repository = NoteRepository(notesDao)
     }
 
-    fun deleteNote(noteId: Int) {
-        notes.value = notes.value.filterNot { it.id == noteId }
+    // 使用 switchMap 来根据当前的 bookId 获取对应的笔记列表
+    val notesByBookId: LiveData<List<Note>> = _currentBookId.switchMap { bookId ->
+        bookId?.let {
+            repository.getNotesByBookId(it)
+        } ?: MutableLiveData(emptyList())
     }
 
-    fun editNote(noteId: Int, newContent: String) {
-        notes.value = notes.value.map {
-            if (it.id == noteId) it.copy(content = newContent) else it
-        }
+    fun setBookId(bookId: Int) {
+        _currentBookId.value = bookId
+    }
+
+    // 添加笔记需要提供bookId
+    fun addNote(noteContent: String, bookId: Int) = viewModelScope.launch {
+        val newNote = Note(content = noteContent, bookId = bookId)
+        repository.insert(newNote)
+    }
+
+    // 删除笔记
+    fun deleteNote(note: Note) = viewModelScope.launch {
+        repository.delete(note)
+    }
+
+    // 编辑笔记
+    fun editNote(noteId: Int, noteContent: String, bookId: Int) = viewModelScope.launch {
+        val noteToUpdate = Note(id = noteId, content = noteContent, bookId = bookId)
+        repository.update(noteToUpdate)
     }
 }

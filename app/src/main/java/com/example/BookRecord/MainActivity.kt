@@ -71,7 +71,16 @@ fun AppNavigation() {
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
             composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("notesScreen"){NotesScreen(navController,modifier = Modifier.fillMaxSize()) }
-            composable("EditNotesScreen") { EditNotesScreen(navController,modifier = Modifier.fillMaxSize()) }
+            composable("EditNotesScreen/{bookId}") { backStackEntry ->
+                // Extract the bookId parameter from the backStackEntry
+                val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
+                if (bookId == null) {
+                    // 无法解析bookId，根据你的应用逻辑处理这种情况
+                    // 比如返回上一屏或显示一个错误消息
+                } else {
+                    EditNotesScreen(navController, bookId, modifier = Modifier.fillMaxSize())
+                }
+            }
             composable("AddBooks"){ AddBookScreen(navController) }
         }
     }

@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,6 +51,7 @@ import androidx.navigation.NavController
 @Composable
 fun EditNotesScreen(
     navController: NavController,
+    bookId: Int,
     modifier: Modifier = Modifier,
 ){
     var showDialog by remember { mutableStateOf(false) }
@@ -57,6 +59,7 @@ fun EditNotesScreen(
     var currentEditingNoteId by remember { mutableStateOf<Int?>(null) }
 
     val viewModel = LocalNotesViewModel.current
+
 
 
     Scaffold(
@@ -122,11 +125,13 @@ fun EditNotesScreen(
                             onClick = {
                                 if (currentEditingNoteId == null) {
                                     // 添加新笔记
-                                    viewModel.addNote(editingContent)
+                                    viewModel.addNote(editingContent, bookId = bookId)
                                 } else {
                                     // 更新现有笔记
-                                    currentEditingNoteId?.let {
-                                        viewModel.editNote(it, editingContent)
+                                    currentEditingNoteId?.let { noteId ->
+                                        // 注意：这里同样假设 bookId 不会是 null，以及你有一个接收 noteId 和 noteContent 的 editNote 方法。
+                                        // 如果你的 editNote 方法需要不同的参数，请相应地调整。
+                                        viewModel.editNote(noteId = noteId, editingContent, bookId = bookId) // 如果 bookId 是 null，则需要决定如何处理
                                     }
                                 }
                                 showDialog = false
@@ -139,16 +144,20 @@ fun EditNotesScreen(
                 )
             }
 
+            // 观察 LiveData 并将其转换为 Compose 可用的状态
+            val notesByBookId = viewModel.notesByBookId.observeAsState(initial = emptyList())
+
+
             // 笔记列表...
             NotesListScreen(
-                notes = viewModel.notes.value,
+                notes = notesByBookId.value,
                 onNoteClick = { note ->
                     editingContent = note.content
                     currentEditingNoteId = note.id
                     showDialog = true
                 },
                 onDeleteClick = { note ->
-                    viewModel.deleteNote(note.id)
+                    viewModel.deleteNote(note)
                 }
             )
         }
@@ -168,7 +177,6 @@ fun NotesListScreen(
                 modifier = Modifier
                     .padding(4.dp)
                     .fillMaxWidth()
-                    .clickable { onNoteClick(note) },
             ) {
                 Row(modifier = Modifier
                     .padding(8.dp)

@@ -45,6 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,15 +71,25 @@ fun HomeScreen(
     val bookViewModel = LocalBooksViewModel.current
 
     // 获取正在读的书籍列表
-    val readingBooks = bookViewModel.getReadingBooks()
+    val readingBooks by bookViewModel.readingBooks.observeAsState(initial = emptyList())
+
 
     // 搜索框和列表布局
     // 使得 Column 可点击，并在点击时清除焦点
     Scaffold(
         floatingActionButton = {
             SmallAddButton(onClick = {
-                navController.navigate("AddBooks")
-            // 在这里定义点击悬浮按钮后的动作，比如打开添加图书的界面
+                // 在这里定义点击悬浮按钮后的动作，比如打开添加图书的界面
+                //navController.navigate("AddBooks")
+                bookViewModel.addBook(
+                    bookTitle = "The Great Gatsby",
+                    bookImage = "https://images.app.goo.gl/5zUzBVRjTqKxDdeV8",
+                    author = "F. Scott Fitzgerald",
+                    pages = "300",
+                    status = BookStatus.READING,
+                    readPage = "0",
+                    press = "xxx"
+                )
             })
         },
         floatingActionButtonPosition = FabPosition.End, // 将按钮放在右下角
@@ -149,6 +160,7 @@ fun HomeScreen(
 @Composable
 fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel) {
     val context = LocalContext.current
+
     LazyColumn {
         items(books) { book -> // 正确使用 books 作为列表
             Card(
@@ -205,7 +217,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                         .width(100.dp),
                                     contentPadding = PaddingValues(),
                                     shape = RoundedCornerShape(5.dp),
-                                    onClick ={ navController.navigate("EditNotesScreen")},
+                                    onClick ={ navController.navigate("EditNotesScreen/${book.id}")},
                                 ) {
                                     Text(text = "notes", fontSize = 15.sp)
                                     Icon(
@@ -260,7 +272,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
 @Composable
 fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book) {
     var showDialog by remember { mutableStateOf(false) }
-    var pageNumber by remember { mutableStateOf(book.read_page.toString()) }
+    var pageNumber by remember { mutableStateOf(book.readpage.toString()) }
 
     // Button to show dialog
     Box(modifier = Modifier.padding(top = 5.dp)) {
@@ -309,8 +321,8 @@ fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book) {
                     Button(
                         onClick = {
                             pageNumber.toIntOrNull()?.let {
-                                // Here you update the read_page of the book
-                                bookViewModel.updateBookReadPage(book.id, it)
+                                book.readpage = it.toString() // 这一行可能不再需要，因为在updateBookReadPage函数内部已经设置了
+                                bookViewModel.updateBookReadPage(book, it.toString())
                             }
                             showDialog = false // Hide dialog when done
                         }
@@ -333,14 +345,14 @@ fun SmallAddButton(onClick: () -> Unit) {
     }
 }
 
+
 @Composable
 fun ExpandedDropdownMenuExample(bookViewModel: BookViewModel, book: Book) {
     var expanded by remember { mutableStateOf(false) }
-    val items = listOf("reading", "have read","lay aside")
-    var selectedIndex by remember { mutableStateOf(0) }
-    // 为每个菜单项定义一个图标，与菜单项的标题对应
-    val icons = listOf(Icons.Filled.MenuBook, Icons.Filled.Done,Icons.Filled.DeleteForever,)
-
+    val items = listOf("Reading", "Complete", "Lay Aside") // 匹配枚举的描述
+    val statuses = listOf(BookStatus.READING, BookStatus.READ, BookStatus.ON_HOLD)
+    var selectedIndex by remember { mutableStateOf(statuses.indexOf(book.status)) } // 初始选择基于书籍的当前状态
+    val icons = listOf(Icons.Filled.MenuBook, Icons.Filled.Done, Icons.Filled.DeleteForever) // 对应状态的图标
 
     Column(modifier = Modifier.fillMaxWidth()) {
         OutlinedButton(
@@ -349,10 +361,10 @@ fun ExpandedDropdownMenuExample(bookViewModel: BookViewModel, book: Book) {
                 .width(100.dp),
             contentPadding = PaddingValues(start = 5.dp),
             shape = RoundedCornerShape(5.dp),
-            onClick = { expanded = true } ,
+            onClick = { expanded = true },
         ) {
             Icon(
-                imageVector = Icons.Filled.MenuBook,
+                imageVector = icons[selectedIndex], // 显示当前选择的状态图标
                 contentDescription = "Select",
                 tint = Color(0xFF6650a4),
                 modifier = Modifier
@@ -364,35 +376,28 @@ fun ExpandedDropdownMenuExample(bookViewModel: BookViewModel, book: Book) {
                 imageVector = Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Select",
                 tint = Color(0xFF6650a4),
-                modifier = Modifier
-                    .size(20.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
         DropdownMenu(
-            modifier = Modifier, // 可以调整宽度以适应内容
             expanded = expanded,
             onDismissRequest = { expanded = false },
-
-            ) {
+        ) {
             items.forEachIndexed { index, title ->
                 DropdownMenuItem(
                     text = { Text(title) },
                     onClick = {
                         selectedIndex = index
                         expanded = false
-                        // 根据选择的项更新书籍状态
-                        when (index) {
-                            1 -> bookViewModel.updateBookStatus(book.id, BookStatus.READ) // "have read"
-                            2 -> bookViewModel.updateBookStatus(book.id, BookStatus.ON_HOLD) // "lay aside"
-                        }
+                        // 更新书籍状态
+                        bookViewModel.updateBookStatus(book, statuses[index])
                     },
-                    leadingIcon = {
-                        Icon(icons[index], contentDescription = null) // 为每个选项添加对应的图标
-                    }
+                    leadingIcon = { Icon(icons[index], contentDescription = null) } // 为每个选项添加对应的图标
                 )
             }
         }
     }
 }
+
 

@@ -1,93 +1,57 @@
 package com.example.BookRecord
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.map
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
-import androidx.compose.runtime.State
 
-enum class BookStatus {
-    READING,
-    READ,
-    ON_HOLD
-}
 
-data class Book(
-    val id: Int,
-    var title: String,
-    var image: String,
-    var author: String,
-    var pages: String,
-    var status: BookStatus,
-    var read_page :Int
-)
 
-class BookViewModel : ViewModel() {
-    private var nextId = 1 // 简单的方式来生成唯一ID
-    val books: MutableState<List<Book>> = mutableStateOf(emptyList())
+class BookViewModel(application: Application) : AndroidViewModel(application) {
 
-    val numberOfBooks: Int
-        get() = books.value.size
+    private val repository: BookRepository
+    // 使用LiveData来观察数据变化
+    val allBooks: LiveData<List<Book>>
 
-    val numberOfBooksByStatus: Map<BookStatus, Int>
-        get() = books.value.groupingBy { it.status }.eachCount()
+    // 添加用于观察正在读的书籍的LiveData
+    val readingBooks: LiveData<List<Book>>
 
-    fun addBook(
-        bookTitle: String,
-        bookImage: String,
-        author: String,
-        pages: String,
-        status: BookStatus,
-        read_page: Int
-    ) {
-        val newBook = Book(
-            id = nextId++,
-            title = bookTitle,
-            image = bookImage,
-            author = author,
-            pages = pages,
-            status = status,
-            read_page = read_page
-        )
-        books.value = books.value + newBook
-    }
+    init {
+        val bookDao = AppDatabase.getDatabase(application).bookDao()
+        repository = BookRepository(bookDao)
+        allBooks = repository.allBooks
 
-    // 获取状态为正在读的书的列表
-    fun getReadingBooks(): List<Book> {
-        return books.value.filter { it.status == BookStatus.READING }
-    }
-
-    fun getHaveReadBooks(): List<Book> {
-        return books.value.filter { it.status == BookStatus.READ }
-    }
-
-    fun getLayAsideBooks(): List<Book> {
-        return books.value.filter { it.status == BookStatus.ON_HOLD }
-    }
-
-    fun deleteBook(bookId: Int) {
-        books.value = books.value.filterNot { it.id == bookId }
-    }
-
-    fun updateBookStatus(bookId: Int, newStatus: BookStatus) {
-        books.value = books.value.map { book ->
-            if (book.id == bookId) {
-                book.copy(status = newStatus)
-            } else {
-                book
-            }
+        // 使用 map 扩展函数来创建新的 LiveData 实例
+        readingBooks = allBooks.map { books ->
+            books.filter { it.status == BookStatus.READING }
         }
     }
 
+    // 添加书籍
+    fun addBook(bookTitle: String, bookImage: String, author: String, pages: String, status: BookStatus, readPage: String, press: String) = viewModelScope.launch {
+        val newBook = Book(title = bookTitle, image = bookImage, author = author, pages = pages, status = status, readpage = readPage, press = press)
+        repository.insert(newBook)
+    }
 
-    fun updateBookReadPage(bookId: Int, readPage: Int) {
-        books.value = books.value.map { book ->
-            if (book.id == bookId) {
-                book.copy(read_page = readPage)
-            } else {
-                book
-            }
-        }
+    // 删除书籍
+    fun deleteBook(book: Book) = viewModelScope.launch {
+        repository.delete(book)
+    }
+
+    // 更新书籍状态
+    fun updateBookStatus(book: Book, newStatus: BookStatus) = viewModelScope.launch {
+        book.status = newStatus
+        repository.update(book)
+    }
+
+    // 更新已读页数
+    fun updateBookReadPage(book: Book, readPage: String) = viewModelScope.launch {
+        book.readpage = readPage
+        repository.update(book)
     }
 }
+
 
