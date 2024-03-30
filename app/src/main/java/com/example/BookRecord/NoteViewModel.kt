@@ -15,7 +15,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: NoteRepository
 
     // 使用 MutableLiveData 来跟踪当前选中的 bookId
-    private val _currentBookId = MutableLiveData<Int>()
+    private val _currentBookId = MutableLiveData<Int?>()
 
     init {
         val appDatabase = AppDatabase.getDatabase(application)
@@ -33,6 +33,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun setBookId(bookId: Int) {
         _currentBookId.value = bookId
     }
+
 
     // 添加笔记需要提供bookId
     fun addNote(noteContent: String, bookId: Int) = viewModelScope.launch {

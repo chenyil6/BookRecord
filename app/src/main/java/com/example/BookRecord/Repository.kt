@@ -25,6 +25,10 @@ class NoteRepository(private val noteDao: NoteDao) {
         noteDao.insert(note)
     }
 
+    fun getNoteCountByBookId(bookId: Int): LiveData<Int> {
+        return noteDao.getNoteCountByBookId(bookId)
+    }
+
     suspend fun update(note: Note) {
         noteDao.update(note)
     }

@@ -76,4 +76,6 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.6.3")
 
+    implementation("com.jakewharton.threetenabp:threetenabp:1.3.1")
+
 }

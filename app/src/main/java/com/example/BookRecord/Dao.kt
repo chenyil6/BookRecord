@@ -29,6 +29,9 @@ interface NoteDao {
     @Query("SELECT * FROM Note WHERE bookId = :bookId")
     fun getNotesByBookId(bookId: Int): LiveData<List<Note>>
 
+    @Query("SELECT COUNT(*) FROM Note WHERE bookId = :bookId")
+    fun getNoteCountByBookId(bookId: Int): LiveData<Int>
+
     @Update
     suspend fun update(note: Note)
 

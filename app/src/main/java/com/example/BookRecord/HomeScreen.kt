@@ -56,6 +56,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import org.threeten.bp.LocalDate
+import org.threeten.bp.format.DateTimeFormatter
+import org.threeten.bp.temporal.ChronoUnit
 
 
 @Composable
@@ -88,7 +91,8 @@ fun HomeScreen(
                     pages = "300",
                     status = BookStatus.READING,
                     readPage = "0",
-                    press = "xxx"
+                    press = "xxx",
+                    startTime = LocalDate.now()
                 )
             })
         },
@@ -239,16 +243,21 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                 modifier = Modifier.weight(3.5f)
                             ) {
                                 Text(text = "From", fontSize = 12.sp)
-                                Text(text = "2024/03/08", fontSize = 12.sp)
-
+                                val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
+                                val dateString = book.startTime.format(formatter)
+                                Text(text = dateString, fontSize = 12.sp)
                             }
+                            // 已经读了多少天
                             Column(
                                 modifier = Modifier
                                     .weight(2.5f)
                             ) {
-                                Text(text = "7", fontSize = 12.sp)
+                                // 计算从开始阅读到现在的天数
+                                val daysRead = ChronoUnit.DAYS.between(book.startTime, LocalDate.now()).toInt()
+                                Text(text = daysRead.toString(), fontSize = 12.sp)
                                 Text(text = "days", fontSize = 12.sp)
                             }
+
                             Column(
                                 modifier = Modifier
                                     .weight(4f)

@@ -27,11 +27,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.BookRecord.ui.theme.AnalyticsScreen
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
-
+import com.jakewharton.threetenabp.AndroidThreeTen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AndroidThreeTen.init(this)
         setContent {
             val notesViewModel: NoteViewModel by viewModels()
             val bookViewModel: BookViewModel by viewModels()
@@ -70,7 +71,16 @@ fun AppNavigation() {
             composable("Book") { HomeScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
             composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
-            composable("notesScreen"){NotesScreen(navController,modifier = Modifier.fillMaxSize()) }
+            composable("notesScreen/{bookId}") { backStackEntry ->
+                // Extract the bookId parameter from the backStackEntry
+                val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
+                if (bookId == null) {
+                    // 无法解析bookId，根据你的应用逻辑处理这种情况
+                    // 比如返回上一屏或显示一个错误消息
+                } else {
+                    NotesScreen(navController, bookId, modifier = Modifier.fillMaxSize())
+                }
+            }
             composable("EditNotesScreen/{bookId}") { backStackEntry ->
                 // Extract the bookId parameter from the backStackEntry
                 val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()

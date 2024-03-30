@@ -6,51 +6,77 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import org.threeten.bp.LocalDate
 
-
+enum class BookStatus {
+    READING,
+    READ,
+    ON_HOLD
+}
 
 
 class BookViewModel(application: Application) : AndroidViewModel(application) {
+    private val bookDao = AppDatabase.getDatabase(application).bookDao()
+    private val noteDao = AppDatabase.getDatabase(application).noteDao()
+    private val bookRepository: BookRepository
+    private val noteRepository: NoteRepository
 
-    private val repository: BookRepository
     // 使用LiveData来观察数据变化
     val allBooks: LiveData<List<Book>>
-
-    // 添加用于观察正在读的书籍的LiveData
     val readingBooks: LiveData<List<Book>>
+    val completeBooks: LiveData<List<Book>>
+    val layasideBooks: LiveData<List<Book>>
 
     init {
-        val bookDao = AppDatabase.getDatabase(application).bookDao()
-        repository = BookRepository(bookDao)
-        allBooks = repository.allBooks
+        bookRepository = BookRepository(bookDao)
+        noteRepository = NoteRepository(noteDao)
 
-        // 使用 map 扩展函数来创建新的 LiveData 实例
+        allBooks = bookRepository.allBooks
+
         readingBooks = allBooks.map { books ->
             books.filter { it.status == BookStatus.READING }
         }
+
+        completeBooks = allBooks.map { books -> // 注意属性名称修正
+            books.filter { it.status == BookStatus.READ }
+        }
+
+        layasideBooks = allBooks.map { books ->
+            books.filter { it.status == BookStatus.ON_HOLD }
+        }
     }
 
-    // 添加书籍
-    fun addBook(bookTitle: String, bookImage: String, author: String, pages: String, status: BookStatus, readPage: String, press: String) = viewModelScope.launch {
-        val newBook = Book(title = bookTitle, image = bookImage, author = author, pages = pages, status = status, readpage = readPage, press = press)
-        repository.insert(newBook)
+    fun addBook(bookTitle: String, bookImage: String, author: String, pages: String, status: BookStatus, readPage: String, press: String,startTime: LocalDate) = viewModelScope.launch {
+        val newBook = Book(
+            title = bookTitle,
+            image = bookImage,
+            author = author,
+            pages = pages,
+            status = status,
+            readpage = readPage,
+            press = press,
+            startTime = startTime // 设置当前日期为开始时间
+        )
+        bookRepository.insert(newBook)
     }
 
-    // 删除书籍
     fun deleteBook(book: Book) = viewModelScope.launch {
-        repository.delete(book)
+        bookRepository.delete(book)
     }
 
-    // 更新书籍状态
     fun updateBookStatus(book: Book, newStatus: BookStatus) = viewModelScope.launch {
         book.status = newStatus
-        repository.update(book)
+        bookRepository.update(book)
     }
 
-    // 更新已读页数
     fun updateBookReadPage(book: Book, readPage: String) = viewModelScope.launch {
-        book.readpage = readPage
-        repository.update(book)
+        book.readpage = readPage // 确保属性名称与你的 Book 类一致
+        bookRepository.update(book)
+    }
+
+    // 新增方法：获取指定书籍的笔记数量
+    fun getNoteCountByBookId(bookId: Int): LiveData<Int> {
+        return noteRepository.getNoteCountByBookId(bookId)
     }
 }
 

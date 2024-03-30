@@ -3,12 +3,8 @@ package com.example.BookRecord
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import org.threeten.bp.LocalDate
 
-enum class BookStatus {
-    READING,
-    READ,
-    ON_HOLD
-}
 
 @Entity(tableName = "books")
 data class Book(
@@ -19,7 +15,8 @@ data class Book(
     var pages: String,
     var status: BookStatus,  // 注意: Room默ß认不支持枚举。你需要自定义类型转换器(TypeConverter)来处理枚举。
     var readpage: String,
-    var press:String
+    var press:String,
+    var startTime: LocalDate // 使用 LocalDate
 )
 
 @Entity(

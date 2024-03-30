@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,10 @@ fun EditNotesScreen(
 
     val viewModel = LocalNotesViewModel.current
 
-
+    // 通知 ViewModel 更新当前 bookId
+    LaunchedEffect(bookId) {
+        viewModel.setBookId(bookId)
+    }
 
     Scaffold(
         floatingActionButton = {

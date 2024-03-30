@@ -28,6 +28,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,8 +48,6 @@ import androidx.navigation.NavController
 fun BookShelf(
     navController: NavController,
     modifier: Modifier = Modifier,
-    names: List<String> = listOf("a", "b", "c", "d", "Book1", "Book1", "Book1", "Book1",
-        "Book1", "Book1", "Book1", "Book1", "Book1", "Book1", "Book1", "Book1")
 ){
     // 鼠标的焦点
     val focusManager = LocalFocusManager.current
@@ -57,7 +56,18 @@ fun BookShelf(
 
     //tab的标签
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabTitles = listOf("have read", "lay aside")
+    val tabTitles = listOf("complete", "lay aside")
+
+    val bookViewModel = LocalBooksViewModel.current
+
+    // 获取读完的书籍列表
+    val completeBooks by bookViewModel.completeBooks.observeAsState(initial = emptyList())
+    // 获取搁置的书籍列表
+    val layasideBooks by bookViewModel.layasideBooks.observeAsState(initial = emptyList())
+
+    // 根据选中的Tab来决定展示哪个列表
+    val booksToShow = if (selectedTabIndex == 0) completeBooks else layasideBooks
+
     // 搜索框和列表布局
     // 使得 Column 可点击，并在点击时清除焦点
     Column(
@@ -117,39 +127,32 @@ fun BookShelf(
             edgePadding = 0.dp,
             contentColor = Color(0xFF6650a4),
             indicator = {},
-            divider = {}
-        ) {
+            divider = {}) {
             tabTitles.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
+                Tab(selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
-                    text = { Text(title, fontSize = 16.sp ,color = if (selectedTabIndex == index) Color(0xFF6650a4) else Color.Gray) }
-                )
+                    text = {
+                        Text(title,
+                            fontSize = 16.sp ,
+                            color = if (selectedTabIndex == index) Color(0xFF6650a4) else Color.Gray) })
             }
         }
 
-        // 根据选中的 Tab 显示内容
-        //when (selectedTabIndex) {
-        //    0 -> BookList(names.filter { /* 这里添加你的过滤逻辑 */ })
-         //   1 -> BookList(names.filter { /* 这里添加你的过滤逻辑 */ })
-         //   2 -> BookList(names.filter { /* 这里添加你的过滤逻辑 */ })
-        //}
-
-        // 图书列表
-        BookGrid(navController,names = names.filter { it.contains(searchText, ignoreCase = true) } )// 传递 NavController 实例
-
+        // 图书网格列表
+        BookGrid(navController,viewModel= bookViewModel, books = booksToShow.filter { it.title.contains(searchText, ignoreCase = true) })
     }
 }
 
 @Composable
-fun BookGrid(navController:NavController,names: List<String>, modifier: Modifier = Modifier) {
+fun BookGrid(navController:NavController,viewModel: BookViewModel,books: List<Book>, modifier: Modifier = Modifier) {
     val columns = 3 // 定义每行显示的书籍数量
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
         modifier = modifier.padding(4.dp)
     ) {
-        items(names) { name ->
+        items(books) { book ->
+            val noteCount = viewModel.getNoteCountByBookId(book.id).observeAsState(initial = 0)
             Card(
                 modifier = Modifier
                     .aspectRatio(3f / 4f), // 假设每本书的尺寸比例为3:4
@@ -162,7 +165,7 @@ fun BookGrid(navController:NavController,names: List<String>, modifier: Modifier
                         modifier = Modifier
                             .fillMaxSize() // 填满 Card
                             .clickable {
-                                navController.navigate("notesScreen")
+                                navController.navigate("notesScreen/${book.id}")
                             }
                     )
                     // 笔记图标和数量显示在右下角
@@ -178,7 +181,7 @@ fun BookGrid(navController:NavController,names: List<String>, modifier: Modifier
                         )
                         // 假设笔记数量为示例用，你可以根据实际情况动态设置
                         Text(
-                            text = "5",
+                            text = "${noteCount.value}",
                             color = Color.Gray,
                             fontSize = 15.sp,
                         )

@@ -25,20 +25,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.foundation.lazy.items
-
-
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 
 
 @Composable
 fun NotesScreen( // 重命名为 NotesScreen
-    navController: NavController, modifier: Modifier = Modifier,
+    navController: NavController,
+    bookId:Int,
+    modifier: Modifier = Modifier,
 ) {
     // 示例笔记数据
-    val exampleNotes = listOf(
-        "Finished reading '1984'. Remarkable insights into authoritarianism.",
-        "Started 'The Catcher in the Rye'. The narrative style is unique.",
-        "Need to buy 'To Kill a Mockingbird'. It comes highly recommended."
-    )
+    val viewModel = LocalNotesViewModel.current
+
+
+    // 通知 ViewModel 更新当前 bookId
+    LaunchedEffect(bookId) {
+        viewModel.setBookId(bookId)
+    }
+
+    // 观察 LiveData 并将其转换为 Compose 可用的状态
+    val notesByBookId = viewModel.notesByBookId.observeAsState(initial = emptyList())
 
     Scaffold() {paddingValues ->
         Column(
@@ -77,13 +84,13 @@ fun NotesScreen( // 重命名为 NotesScreen
             }
 
             // 笔记列表
-            NoteList(notes = exampleNotes, modifier = modifier.padding(paddingValues).padding(16.dp))
+            NoteList(notes = notesByBookId.value, modifier = modifier.padding(paddingValues).padding(16.dp))
         }
     }
 }
 
 @Composable
-fun NoteList(notes: List<String>, modifier: Modifier = Modifier) {
+fun NoteList(notes: List<Note>, modifier: Modifier = Modifier) {
     LazyColumn(modifier = modifier) {
         items(items = notes, key = { note -> note.hashCode() }) { note ->
             Card(
@@ -94,7 +101,7 @@ fun NoteList(notes: List<String>, modifier: Modifier = Modifier) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(text = note)
+                    Text(text = note.content)
                 }
             }
         }
