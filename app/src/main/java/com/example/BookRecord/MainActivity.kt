@@ -122,7 +122,7 @@ fun AppNavigation(
 ) {
     //val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
-    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks")
+    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks","Register")
     Scaffold(
         bottomBar = { if (shouldShowBottomBar) {
                         BottomNavigationBar(navController) }

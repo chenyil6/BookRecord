@@ -30,7 +30,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 
@@ -77,7 +76,7 @@ fun LoginScreen(
             Text("Invalid email", color = MaterialTheme.colorScheme.error)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         var password by remember { mutableStateOf("") }
         var passwordError by remember { mutableStateOf(false) }
@@ -131,23 +130,29 @@ fun LoginScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
-            onClick = {
-                val signInIntent = googleSignInClient.signInIntent
-                signInLauncher.launch(signInIntent) // 使用signInLauncher来启动登录意图
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Sign in with Google")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
+//        Button(
+//            onClick = {
+//                val signInIntent = googleSignInClient.signInIntent
+//                signInLauncher.launch(signInIntent) // 使用signInLauncher来启动登录意图
+//            },
+//            modifier = Modifier.fillMaxWidth()
+//        ) {
+//            Text("Sign in with Google")
+//        }
+//
+//        Spacer(modifier = Modifier.height(8.dp))
 
         Row {
-            TextButton(onClick = { /* TODO: 导航到忘记密码页面 */ }) {
-                Text("Forgot Password?")
+            TextButton(
+                onClick = {
+                    val signInIntent = googleSignInClient.signInIntent
+                    signInLauncher.launch(signInIntent) // 使用signInLauncher来启动登录意图
+                }) {
+                Text("Sign in with Google")
             }
+
             Spacer(Modifier.weight(1f))
+
             TextButton(onClick = {
                 navController.navigate("Register")
             }) {
