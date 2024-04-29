@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +57,7 @@ fun RegisterScreen(
         var emailError by remember { mutableStateOf(false) }
         var password by remember { mutableStateOf("") }
         var passwordError by remember { mutableStateOf(false) }
-
+        var passwordVisible by remember { mutableStateOf(false) }
         // Email 输入框
         OutlinedTextField(
             value = email,
@@ -81,14 +85,21 @@ fun RegisterScreen(
                 password = it
                 minLength = password.length >= 8
                 hasNumber = password.any { it.isDigit() }
-                passwordError = !(minLength && hasNumber)
+                passwordError = !(minLength && hasNumber) // Ensure both conditions are met
             },
             label = { Text("Password") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), // Visibility is based on the toggle state
+            trailingIcon = {
+                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             isError = passwordError
         )
+
 
 //        if (passwordError) {
 //            Text("Password does not meet requirements", color = MaterialTheme.colorScheme.error)
@@ -152,11 +163,11 @@ fun PasswordRule(text: String, isValid: Boolean) {
         Icon(
             imageVector = if (isValid) Icons.Filled.CheckCircle else Icons.Filled.Error,
             contentDescription = null,
-            tint = if (isValid) Color(0xC36FB147) else Color(0xFFF77168),
+            tint = if (isValid) Color(0xC36FB147) else Color(0xFFF44336),
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text, color = if (isValid) Color(0xC36FB147) else Color(0xFFF77168), style = MaterialTheme.typography.bodyMedium)
+        Text(text, color = if (isValid) Color(0xC36FB147) else Color(0xFFF44336), style = MaterialTheme.typography.bodyMedium)
     }
 }
 

@@ -11,7 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,6 +86,7 @@ fun LoginScreen(
 
         var password by remember { mutableStateOf("") }
         var passwordError by remember { mutableStateOf(false) }
+        var passwordVisible by remember { mutableStateOf(false) } // 新增状态
 
         OutlinedTextField(
             value = password,
@@ -89,14 +96,22 @@ fun LoginScreen(
             },
             label = { Text("Password") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), // 根据状态选择是否显示密码
+            trailingIcon = { // 添加眼睛图标作为尾随图标
+                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                val description = if (passwordVisible) "Hide password" else "Show password"
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = description)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             isError = passwordError
         )
         if (passwordError) {
-            Text("Password does not meet requirements", color = MaterialTheme.colorScheme.error)
+            Text("Should be more than 8 characters", color = MaterialTheme.colorScheme.error)
         }
         Spacer(modifier = Modifier.height(32.dp))
+
 
         Button(
             onClick = {
@@ -129,18 +144,6 @@ fun LoginScreen(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-
-//        Button(
-//            onClick = {
-//                val signInIntent = googleSignInClient.signInIntent
-//                signInLauncher.launch(signInIntent) // 使用signInLauncher来启动登录意图
-//            },
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            Text("Sign in with Google")
-//        }
-//
-//        Spacer(modifier = Modifier.height(8.dp))
 
         Row {
             TextButton(
