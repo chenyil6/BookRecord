@@ -41,8 +41,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 
 @Composable
 fun LoginScreen(
+    //auth: FirebaseAuth,
     navController: NavController,
-    //activity: ComponentActivity, // 将 context 参数改为 activity 参数
     signInLauncher: ActivityResultLauncher<Intent>, // 添加这个新参数
     googleSignInClient: GoogleSignInClient, // 这个应该从Activity或ViewModel传递到Composable
     modifier: Modifier = Modifier,
@@ -115,6 +115,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
+                //auth.signOut()
                 if (!emailError && !passwordError) {
                     viewModel.loginUser(email, password)
                 }
@@ -134,8 +135,9 @@ fun LoginScreen(
         loginStatus?.let { isSuccess ->
             if (isSuccess) {
                 LaunchedEffect(isSuccess) {
-                    navController.navigate("Book") {
-                        popUpTo("login") { inclusive = true }
+                    navController.navigate("Book")
+                    {
+                        popUpTo("LoginScreen") { inclusive = true }
                     }
                 }
             } else {

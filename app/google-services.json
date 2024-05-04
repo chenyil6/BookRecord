@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "858405830070",
+    "project_id": "bookrecord-c2220",
+    "storage_bucket": "bookrecord-c2220.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858405830070:android:f1774023bc4a89a2dd5517",
+        "android_client_info": {
+          "package_name": "com.example.BookRecord"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "858405830070-nniqgt0v4h1rjgg4evikooqh1ipvc9pi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.BookRecord",
+            "certificate_hash": "4a9493ef76274b5b160af34df555336b6d42a4d6"
+          }
+        },
+        {
+          "client_id": "858405830070-j3jpmljlvegrp4l4qsvha6ehrf9e6ae7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSy-bfZ8BBymgk0mOejvEspEw-J0dJJlY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "858405830070-j3jpmljlvegrp4l4qsvha6ehrf9e6ae7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

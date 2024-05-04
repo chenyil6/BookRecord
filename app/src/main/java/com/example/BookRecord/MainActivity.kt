@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -58,20 +59,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
-
-        // 初始化 Google Sign-In
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .build()
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        // 注册 Google 登录的 ActivityResultLauncher
-        signInResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                handleSignInResult(task)
-            }
-        }
+        setupGoogleSignIn()  // 调用新的方法来初始化谷歌登录
 
         setContent {
             val notesViewModel: NoteViewModel by viewModels()
@@ -89,16 +77,31 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun setupGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .build()
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+        signInResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                handleSignInResult(task)
+            }
+        }
+    }
+
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             val account = task.getResult(ApiException::class.java)
             // 登录成功，使用 account 信息，导航到 Book 页面
             navController.navigate("Book")
         } catch (e: ApiException) {
-            // 登录失败，处理异常
             Log.e("SignIn", "signInResult:failed code=" + e.statusCode)
+            Toast.makeText(this, "Google Sign-In failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
+
     class RegisterViewModelFactory(private val userRepository: UserRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
@@ -122,11 +125,11 @@ fun AppNavigation(
 ) {
     //val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
-    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks","Register")
+    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks")
     Scaffold(
         bottomBar = { if (shouldShowBottomBar) {
-                        BottomNavigationBar(navController) }
-                    }
+            BottomNavigationBar(navController) }
+        }
     ) { innerPadding ->
         // 利用提供的 innerPadding 参数调整内容的内边距
         NavHost(
@@ -146,7 +149,7 @@ fun AppNavigation(
                 // 调用 RegisterScreen 并将 viewModel 传递进去
                 RegisterScreen(navController, registerViewModel, modifier = Modifier.fillMaxSize())
             }
-            composable("Book") { HomeScreen(navController,modifier = Modifier.fillMaxSize())}
+            composable("Book") { HomeScreen(googleSignInClient,navController,modifier = Modifier.fillMaxSize())}
             composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
             composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
             composable("notesScreen/{bookId}") { backStackEntry ->
@@ -207,5 +210,3 @@ fun BottomNavigationBar(navController: NavController) {
 fun PreviewMainActivity() {
 
 }
-
-

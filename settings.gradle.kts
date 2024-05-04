@@ -17,7 +17,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-
 rootProject.name = "BookRecord"
 include(":app")
 //

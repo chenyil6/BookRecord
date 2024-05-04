@@ -2,9 +2,30 @@ package com.example.BookRecord.ui.theme
 
 import android.icu.text.SimpleDateFormat
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,34 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Canvas
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-
-import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.modifier.modifierLocalProvider
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import java.time.Instant
@@ -161,37 +162,11 @@ fun DisplayDatePicker() {
         Spacer(modifier = Modifier.height(10.dp))
         androidx.compose.material3.Text(
 
-            text = "   Data Until: ${formatter.format(Date(selectedDate))}"
+            text = "Data Until: ${formatter.format(Date(selectedDate))}"
         )
     }
 }
 
-
-//@Composable
-//fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(200.dp)) {
-//    Canvas(modifier = modifier) {
-//        val total = data.values.sum()
-//        var startAngle = -90f // 扇形图的起始角度
-//
-//        data.forEach { (category, count) ->
-//            val sweepAngle = (count / total.toFloat()) * 360f // 扇形图的角度
-//            val color = when (category) { // 根据分类获取颜色
-//                "已读" -> colorRead
-//                "未读" -> colorUnread
-//                "在读" -> colorReading
-//                else -> Color.LightGray
-//            }
-//            drawArc(
-//                color = color, // 使用上面定义的颜色
-//                startAngle = startAngle,
-//                sweepAngle = sweepAngle,
-//                useCenter = true,
-//                size = Size(size.width, size.height) // 使用整个Canvas的尺寸
-//            )
-//            startAngle += sweepAngle // 下一个扇形的起始角度
-//        }
-//    }
-//}
 
 @Composable
 fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(150.dp)) {
@@ -336,21 +311,6 @@ fun AnalyticsPage() {
             color = Color(0xFF6650a4),
             modifier = Modifier.padding(end = 5.dp) // 根据需要调整文本的右边距
         )
-//        Box(modifier = Modifier
-//            .fillMaxWidth()
-//            .background(Color.White)){
-//            Column(modifier = Modifier.fillMaxWidth()) {
-//                Spacer(modifier = Modifier.height(5.dp))
-//                Text(text = "Reading Statistics",
-//                    fontSize = 25.sp,
-//                    fontWeight = FontWeight.Bold,
-//                    color = Color(0xFF6650a4),
-//                    modifier = Modifier.padding(end = 5.dp)
-//                    )
-//                Spacer(modifier = Modifier.height(5.dp))
-//                Divider(color = Color.LightGray, thickness = 0.5.dp)
-//            }
-//        }
         Spacer(modifier = Modifier.height(20.dp)) //
         Text(
             text = "✔️ Page Count Statistics",
