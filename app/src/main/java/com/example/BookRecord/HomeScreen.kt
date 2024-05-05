@@ -126,20 +126,8 @@ fun HomeScreen(
                             FirebaseAuth.getInstance().signOut()
                             googleSignInClient.signOut()
                             navController.navigate("LoginScreen"){
-                                popUpTo("LoginScreen") { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
-
-//                                googleSignInClient.signOut().addOnCompleteListener { task ->
-//                                    if (task.isSuccessful) {
-//                                        // 注销成功，导航回登录界面
-//                                        navController.navigate("LoginScreen") {
-//                                            popUpTo("LoginScreen") { inclusive = true }
-//                                        }
-//                                    } else {
-//                                        // 处理可能的错误，例如显示一个错误消息
-//                                        Log.e("Logout", "Google sign out failed")
-//                                    }
-//                                }
                         }) {
                         Icon(
                             imageVector = Icons.Filled.Logout,

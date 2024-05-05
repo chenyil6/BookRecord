@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -22,14 +23,10 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = BookRepository(bookDao, viewModelScope)
     private val noteRepository = NoteRepository(noteDao)
 
-    // 使用LiveData来观察数据变化
-//    val allBooks: LiveData<List<Book>> // 所有书籍
-//    val readingBooks: LiveData<List<Book>> // 正在阅读的书籍
-//    val completeBooks: LiveData<List<Book>> // 已完成的书籍
-//    val layasideBooks: LiveData<List<Book>> // 搁置的书籍
-    val currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
+    var currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
 
     val allBooks: LiveData<List<Book>> = bookRepository.allBooks
+    val bookCounts = MutableLiveData<Map<String, Int>>()
 
     // 使用 MediatorLiveData 替代 Transformations.map
     val readingBooks = MediatorLiveData<List<Book>>()
@@ -47,6 +44,19 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
 
         layasideBooks.addSource(allBooks) { books ->
             layasideBooks.value = books.filter { it.status == BookStatus.ON_HOLD }
+        }
+        // Update book counts
+        updateBookCounts()
+    }
+
+
+    private fun updateBookCounts() {
+        val counts = mutableMapOf("have read" to 0, "lay aside" to 0, "reading" to 0)
+        allBooks.observeForever { books ->
+            counts["have read"] = books.count { it.status == BookStatus.READ }
+            counts["lay aside"] = books.count { it.status == BookStatus.ON_HOLD }
+            counts["reading"] = books.count { it.status == BookStatus.READING }
+            bookCounts.value = counts
         }
     }
 

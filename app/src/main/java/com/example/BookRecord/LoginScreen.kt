@@ -138,7 +138,7 @@ fun LoginScreen(
                 LaunchedEffect(isSuccess) {
                     navController.navigate("Book")
                     {
-                        popUpTo("LoginScreen") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             } else {

@@ -28,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,7 +43,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.BookRecord.BookViewModel
 import java.time.Instant
 import java.util.Date
 import java.util.Locale
@@ -55,20 +58,13 @@ val colorUnread = Color(0xD29CC9E7) // Red
 val colorReading = Color(0xFF9EE0C2) // Blue
 val colorBackground = Color(0xFFFFFFFF) // White or any other background color
 
-// Define some dimension constants
-val spaceSmall = 8.dp
-val spaceMedium = 16.dp
-val spaceLarge = 24.dp
-val chartHeight = 200.dp
-val pieChartSize = 200.dp
-
-
 // Sample data for the bar chart, showing pages read each day.
 val readingData7Days = listOf(5, 2, 7, 3, 5, 4, 13) // 近7天
 val readingData15Days = List(15) { (1..20).random() } // 随机生成近30天的数据
 
 // Sample data for the pie chart, showing book status distribution.
-val bookShelfData = mapOf("have read" to 33, "lay aside" to 12, "reading" to 6)
+//val bookShelfData = mapOf("have read" to 33, "lay aside" to 12, "reading" to 6)
+
 
 
 @Composable
@@ -176,6 +172,7 @@ fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(150.dp))
         val radius = size.minDimension / 2
         val holeRadius = radius * 0.6f // 中心空洞的半径
         var startAngle = -90f // 扇形图的起始角度
+
 
         data.forEach { (category, count) ->
             val sweepAngle = (count / total.toFloat()) * 360f // 扇形图的角度
@@ -287,6 +284,14 @@ fun TimeRangeSelection(timeRange: String, onTimeRangeSelected: (String) -> Unit)
 
 @Composable
 fun AnalyticsPage() {
+    val bookViewModel: BookViewModel = viewModel()  // 获取ViewModel
+
+// 使用compose的方式观察LiveData
+    val bookCounts by bookViewModel.bookCounts.observeAsState(initial = mapOf(
+        "have read" to 0,
+        "lay aside" to 0,
+        "reading" to 0
+    ))
     // State for the time range selection for the bar chart.
     var timeRange by remember { mutableStateOf("Last 7 Days") }
 
@@ -341,7 +346,7 @@ fun AnalyticsPage() {
             modifier = Modifier.align(Alignment.Start) //
         )
         Spacer(modifier = Modifier.height(60.dp)) // 标题和扇形图之间的间隔
-        BookStatusPieChart(data = bookShelfData)
+        BookStatusPieChart(data = bookCounts)
     }
 }
 
