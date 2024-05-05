@@ -2,6 +2,7 @@ package com.example.BookRecord
 
 
 import android.content.Intent
+import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -151,10 +152,12 @@ fun LoginScreen(
             TextButton(
                 onClick = {
                     val signInIntent = googleSignInClient.signInIntent
+                    Log.d("GoogleSignIn", "Launching sign in intent.")
                     signInLauncher.launch(signInIntent) // 使用signInLauncher来启动登录意图
                 }) {
                 Text("Sign in with Google")
             }
+
 
             Spacer(Modifier.weight(1f))
 

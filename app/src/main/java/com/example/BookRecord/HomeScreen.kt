@@ -1,6 +1,5 @@
 package com.example.BookRecord
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -58,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.firebase.auth.FirebaseAuth
 import org.threeten.bp.LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import org.threeten.bp.temporal.ChronoUnit
@@ -123,19 +123,24 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally){
                     IconButton(
                         onClick = {
-                            googleSignInClient.signOut().addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    // 注销成功，导航回登录界面
-                                    navController.navigate("LoginScreen") {
-                                        popUpTo("LoginScreen") { inclusive = true }
-                                    }
-                                } else {
-                                    // 处理可能的错误，例如显示一个错误消息
-                                    Log.e("Logout", "Sign out failed")
-                                }
+                            FirebaseAuth.getInstance().signOut()
+                            googleSignInClient.signOut()
+                            navController.navigate("LoginScreen"){
+                                popUpTo("LoginScreen") { inclusive = true }
                             }
-                        }
-                    ) {
+
+//                                googleSignInClient.signOut().addOnCompleteListener { task ->
+//                                    if (task.isSuccessful) {
+//                                        // 注销成功，导航回登录界面
+//                                        navController.navigate("LoginScreen") {
+//                                            popUpTo("LoginScreen") { inclusive = true }
+//                                        }
+//                                    } else {
+//                                        // 处理可能的错误，例如显示一个错误消息
+//                                        Log.e("Logout", "Google sign out failed")
+//                                    }
+//                                }
+                        }) {
                         Icon(
                             imageVector = Icons.Filled.Logout,
                             contentDescription = "Logout",
@@ -175,8 +180,6 @@ fun HomeScreen(
     }
 
 }
-
-
 
 @Composable
 fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel) {

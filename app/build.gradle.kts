@@ -89,6 +89,13 @@ dependencies {
     // 如果使用 AndroidX 的 ViewModel
     //implementation ("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
     //kapt ("androidx.hilt:hilt-compiler:1.0.0-alpha03")
+    // Add the dependency for the Realtime Database library
+    // When NOT using the BoM, you must specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-database-ktx:20.2.2")
+    // Annotation processor
+    kapt ("androidx.lifecycle:lifecycle-compiler:2.3.1")
+    implementation ("androidx.lifecycle:lifecycle-extensions:2.2.0")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.2.0")
 }
 
 

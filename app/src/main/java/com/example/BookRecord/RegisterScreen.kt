@@ -1,5 +1,6 @@
 package com.example.BookRecord
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,15 +24,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -58,6 +58,51 @@ fun RegisterScreen(
         var password by remember { mutableStateOf("") }
         var passwordError by remember { mutableStateOf(false) }
         var passwordVisible by remember { mutableStateOf(false) }
+        var username by remember { mutableStateOf("") }
+        var phoneNumber by remember { mutableStateOf("") }
+        var gender by remember { mutableStateOf("") }
+        var genderError by remember { mutableStateOf(false) }
+
+        // 用户名输入框
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 电话号码输入框
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Phone Number") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 性别选择框
+        OutlinedTextField(
+            value = gender,
+            onValueChange = {
+                gender = it
+                genderError = !listOf("Male", "Female", "Other").contains(it)
+            },
+            label = { Text("Gender") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            isError = genderError
+        )
+        if (genderError) {
+            Text("Please enter Male, Female, or Other", color = MaterialTheme.colorScheme.error)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Email 输入框
         OutlinedTextField(
             value = email,
@@ -73,11 +118,13 @@ fun RegisterScreen(
         if (emailError) {
             Text("Invalid email", color = MaterialTheme.colorScheme.error)
         }
-        Spacer(modifier = Modifier.height(5.dp))
-        // 密码输入框
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 密码输入框
         var minLength by remember { mutableStateOf(false) }
         var hasNumber by remember { mutableStateOf(false) }
+        val context = LocalContext.current  // 获取当前 Compose 的 Context
 
         OutlinedTextField(
             value = password,
@@ -100,51 +147,42 @@ fun RegisterScreen(
             isError = passwordError
         )
 
-
-//        if (passwordError) {
-//            Text("Password does not meet requirements", color = MaterialTheme.colorScheme.error)
-//        }
-        Spacer(modifier = Modifier.height(10.dp))
-//        Row (modifier = Modifier.fillMaxWidth()){
-//            Column(modifier = Modifier.padding(top = 8.dp)) {
-//                PasswordRule("Minimum 8 characters", minLength)
-//                PasswordRule("At least one number", hasNumber)
-//            }
-//        }
+        //Spacer(modifier = Modifier.height(10.dp))
+// 密码规则说明
         Column(modifier = Modifier.padding(top = 8.dp)) {
             PasswordRule("Minimum 8 characters", minLength)
             PasswordRule("At least one number", hasNumber)
         }
-// 密码规则说明
-        Spacer(modifier = Modifier.height(20.dp))
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // 注册按钮
         Button(
             onClick = {
-                if (!emailError && !passwordError) {
-                    // 调用 ViewModel 中的注册方法
-                    viewModel.registerUser(email, password)
+                if (!emailError && !passwordError && !genderError) {
+                    val userInfo = UserInfo(
+                        email = email,
+                        username = username,
+                        phoneNumber = phoneNumber,
+                        gender = gender
+                    )
+                    viewModel.registerUser(email, password, userInfo)
+                    Toast.makeText(context, "Registration successful. Please login.", Toast.LENGTH_LONG).show()
+                    navController.navigate("LoginScreen"){
+                        popUpTo("LoginScreen") { inclusive = true }
+                    }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            enabled = !emailError && !passwordError
+            enabled = !emailError && !passwordError && !genderError
         ) {
             Text(
                 text = "Register",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
-        }
-
-        // 观察注册状态
-        val registrationStatus by viewModel.registrationStatus.observeAsState(false)
-        if (registrationStatus) {
-            // 注册成功后导航到登录界面
-            LaunchedEffect(key1 = registrationStatus) {
-                navController.navigate("LoginScreen")
-            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -155,6 +193,7 @@ fun RegisterScreen(
         }
     }
 }
+
 
 @Composable
 fun PasswordRule(text: String, isValid: Boolean) {

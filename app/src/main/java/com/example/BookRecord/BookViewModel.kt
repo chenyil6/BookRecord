@@ -3,8 +3,9 @@ package com.example.BookRecord
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.map
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalDate
 
@@ -18,38 +19,41 @@ enum class BookStatus {
 class BookViewModel(application: Application) : AndroidViewModel(application) {
     private val bookDao = AppDatabase.getDatabase(application).bookDao()
     private val noteDao = AppDatabase.getDatabase(application).noteDao()
-    private val bookRepository: BookRepository
-    private val noteRepository: NoteRepository
+    private val bookRepository = BookRepository(bookDao, viewModelScope)
+    private val noteRepository = NoteRepository(noteDao)
 
     // 使用LiveData来观察数据变化
-    val allBooks: LiveData<List<Book>> // 所有书籍
-    val readingBooks: LiveData<List<Book>> // 正在阅读的书籍
-    val completeBooks: LiveData<List<Book>> // 已完成的书籍
-    val layasideBooks: LiveData<List<Book>> // 搁置的书籍
+//    val allBooks: LiveData<List<Book>> // 所有书籍
+//    val readingBooks: LiveData<List<Book>> // 正在阅读的书籍
+//    val completeBooks: LiveData<List<Book>> // 已完成的书籍
+//    val layasideBooks: LiveData<List<Book>> // 搁置的书籍
+    val currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
+
+    val allBooks: LiveData<List<Book>> = bookRepository.allBooks
+
+    // 使用 MediatorLiveData 替代 Transformations.map
+    val readingBooks = MediatorLiveData<List<Book>>()
+    val completeBooks = MediatorLiveData<List<Book>>()
+    val layasideBooks = MediatorLiveData<List<Book>>()
 
     init {
-        bookRepository = BookRepository(bookDao)
-        noteRepository = NoteRepository(noteDao)
-
-        allBooks = bookRepository.allBooks // 获取所有书籍的LiveData
-
-        // 通过map转换LiveData，获取符合特定状态的书籍列表
-        readingBooks = allBooks.map { books ->
-            books.filter { it.status == BookStatus.READING }
+        readingBooks.addSource(allBooks) { books ->
+            readingBooks.value = books.filter { it.status == BookStatus.READING }
         }
 
-        completeBooks = allBooks.map { books ->
-            books.filter { it.status == BookStatus.READ }
+        completeBooks.addSource(allBooks) { books ->
+            completeBooks.value = books.filter { it.status == BookStatus.READ }
         }
 
-        layasideBooks = allBooks.map { books ->
-            books.filter { it.status == BookStatus.ON_HOLD }
+        layasideBooks.addSource(allBooks) { books ->
+            layasideBooks.value = books.filter { it.status == BookStatus.ON_HOLD }
         }
     }
 
     // 添加新书籍
     fun addBook(bookTitle: String, bookImage: String, author: String, pages: String, status: BookStatus, readPage: String, press: String,startTime: LocalDate) = viewModelScope.launch {
         val newBook = Book(
+            userId = currentUserUID ?: "",//确保不会空，处理未登陆的情况
             title = bookTitle,
             image = bookImage,
             author = author,

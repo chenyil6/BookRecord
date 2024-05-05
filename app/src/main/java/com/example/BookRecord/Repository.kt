@@ -1,12 +1,28 @@
 package com.example.BookRecord
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.switchMap
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.CoroutineScope
+
 
 //这两个类的功能是作为应用的数据访问逻辑与数据访问对象（DAO）之间的中间层，提供清晰的API来处理数据。
-class BookRepository(private val bookDao: BookDao) { //这个类封装了对书籍数据的各种操作，使用BookDao接口进行数据操作。
-    val allBooks: LiveData<List<Book>> = bookDao.getAllBooks()
-//通过BookDao获取所有书籍的实时数据（LiveData），这允许观察数据变化并在数据变化时更新UI。
-    //下面都是成员函数
+class BookRepository(private val bookDao: BookDao, private val scope: CoroutineScope) {
+    private val currentUserId = MutableLiveData<String?>()
+
+    init {
+        refreshCurrentUser()
+    }
+
+    fun refreshCurrentUser() {
+        currentUserId.value = FirebaseAuth.getInstance().currentUser?.uid
+    }
+
+    val allBooks: LiveData<List<Book>> = currentUserId.switchMap { uid ->
+        uid?.let { bookDao.getAllBooks(it) } ?: MutableLiveData(emptyList())
+    }
+
     suspend fun insert(book: Book) {
         bookDao.insertBook(book)
     }
@@ -19,6 +35,8 @@ class BookRepository(private val bookDao: BookDao) { //这个类封装了对书�
         bookDao.deleteBook(book)
     }
 }
+
+
 
 class NoteRepository(private val noteDao: NoteDao) {
     fun getNotesByBookId(bookId: Int): LiveData<List<Note>> = noteDao.getNotesByBookId(bookId)

@@ -24,9 +24,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
@@ -43,19 +47,25 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.jakewharton.threetenabp.AndroidThreeTen
 
 
-
 class MainActivity : ComponentActivity() {
-
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
     private lateinit var signInResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var navController: NavHostController  // 删除 'private var' 的声明，改为 lateinit
     // 添加一个属性来保存 RegisterViewModel 的引用
+//    private val registerViewModel by viewModels<RegisterViewModel> {
+//        RegisterViewModelFactory(UserRepository(getSharedPreferences("app_prefs", MODE_PRIVATE)))
+//    }
     private val registerViewModel by viewModels<RegisterViewModel> {
-        RegisterViewModelFactory(UserRepository(getSharedPreferences("app_prefs", MODE_PRIVATE)))
+        RegisterViewModelFactory(AppDatabase.getDatabase(application))
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
@@ -80,40 +90,61 @@ class MainActivity : ComponentActivity() {
 
     private fun setupGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
         signInResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            Log.d("GoogleSignIn", "Activity Result received")
             if (result.resultCode == Activity.RESULT_OK) {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 handleSignInResult(task)
+            } else {
+                Log.d("GoogleSignIn", "Sign in failed or cancelled")
             }
         }
+
     }
 
     private fun handleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
             val account = task.getResult(ApiException::class.java)
-            // 登录成功，使用 account 信息，导航到 Book 页面
-            navController.navigate("Book")
+            val idToken = account.idToken ?: throw Exception("Google ID Token is null")
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            firebaseAuth.signInWithCredential(credential).addOnCompleteListener { authTask ->
+                if (authTask.isSuccessful) {
+                    val firebaseUser = authTask.result?.user ?: throw Exception("Firebase user is null")
+                    val userId = firebaseUser.uid
+                    registerViewModel.checkAndInsertUser(userId).observe(this, Observer { userInserted ->
+                        if (userInserted || registerViewModel.userAlreadyExists) {
+                            navController.navigate("Book")  // 如果用户新插入或已存在，都导航至Book页面
+                        } else {
+                            // 处理用户插入失败情况
+                            Log.d("SignIn", "User insertion failed due to an error.")
+                            Toast.makeText(this, "An error occurred during user insertion", Toast.LENGTH_LONG).show()
+                        }
+                    })
+                } else {
+                    Log.e("SignIn", "Firebase Sign-In failed: ${authTask.exception?.localizedMessage}")
+                    Toast.makeText(this, "Firebase Google Sign-In failed: ${authTask.exception?.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
         } catch (e: ApiException) {
-            Log.e("SignIn", "signInResult:failed code=" + e.statusCode)
+            Log.e("SignIn", "Google Sign-In failed code=${e.statusCode}")
             Toast.makeText(this, "Google Sign-In failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 
-    class RegisterViewModelFactory(private val userRepository: UserRepository) : ViewModelProvider.Factory {
+    class RegisterViewModelFactory(private val appDatabase: AppDatabase) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return RegisterViewModel(userRepository) as T
+                return RegisterViewModel(UserRepository(appDatabase)) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
+
 }
-
-
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppNavigation(
@@ -123,9 +154,12 @@ fun AppNavigation(
     googleSignInClient: GoogleSignInClient,
     signInResultLauncher: ActivityResultLauncher<Intent>
 ) {
+    val currentUser = observeUserAuthenticationState().value
+    val startDestination = if (currentUser != null) "Book" else "LoginScreen"
+
     //val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
-    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks")
+    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks","Register")
     Scaffold(
         bottomBar = { if (shouldShowBottomBar) {
             BottomNavigationBar(navController) }
@@ -134,7 +168,8 @@ fun AppNavigation(
         // 利用提供的 innerPadding 参数调整内容的内边距
         NavHost(
             navController = navController,
-            startDestination = "LoginScreen",
+            startDestination = startDestination,
+            //startDestination = "LoginScreen",
             modifier = Modifier.padding(innerPadding) // 应用内边距
         ) {
             composable("LoginScreen") {
@@ -204,9 +239,20 @@ fun BottomNavigationBar(navController: NavController) {
     }
 }
 
-
-@Preview
 @Composable
-fun PreviewMainActivity() {
+fun observeUserAuthenticationState(): State<FirebaseUser?> {
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = remember { mutableStateOf(auth.currentUser) }
 
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser.value = auth.currentUser
+        }
+        auth.addAuthStateListener(listener)
+        onDispose {
+            auth.removeAuthStateListener(listener)
+        }
+    }
+
+    return currentUser
 }
