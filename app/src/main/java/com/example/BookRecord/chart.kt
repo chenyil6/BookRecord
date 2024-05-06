@@ -2,46 +2,50 @@ package com.example.BookRecord.ui.theme
 
 import android.icu.text.SimpleDateFormat
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Canvas
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-
-import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.modifier.modifierLocalProvider
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.BookRecord.BookViewModel
 import java.time.Instant
 import java.util.Date
 import java.util.Locale
@@ -54,20 +58,13 @@ val colorUnread = Color(0xD29CC9E7) // Red
 val colorReading = Color(0xFF9EE0C2) // Blue
 val colorBackground = Color(0xFFFFFFFF) // White or any other background color
 
-// Define some dimension constants
-val spaceSmall = 8.dp
-val spaceMedium = 16.dp
-val spaceLarge = 24.dp
-val chartHeight = 200.dp
-val pieChartSize = 200.dp
-
-
 // Sample data for the bar chart, showing pages read each day.
 val readingData7Days = listOf(5, 2, 7, 3, 5, 4, 13) // 近7天
 val readingData15Days = List(15) { (1..20).random() } // 随机生成近30天的数据
 
 // Sample data for the pie chart, showing book status distribution.
-val bookShelfData = mapOf("Read" to 33, "Unread" to 12, "Reading" to 6)
+//val bookShelfData = mapOf("have read" to 33, "lay aside" to 12, "reading" to 6)
+
 
 
 @Composable
@@ -80,9 +77,9 @@ fun BarChart(data: List<Int>, modifier: Modifier = Modifier
 
         data.forEachIndexed { index, count ->
             val barHeight = size.height * (count / maxCount.toFloat())
-            val barTopLeft = Offset((barWidth + barWidth * 2 * index), size.height - barHeight)
+            val barTopLeft = Offset((barWidth / 2 + barWidth * 2 * index), size.height - barHeight)
             drawRect(
-                color = colorPrimary, // 假设使用蓝色表示
+                color = colorPrimary, //
                 topLeft = barTopLeft,
                 size = Size(barWidth, barHeight)
             )
@@ -161,37 +158,11 @@ fun DisplayDatePicker() {
         Spacer(modifier = Modifier.height(10.dp))
         androidx.compose.material3.Text(
 
-            text = "   Data Until: ${formatter.format(Date(selectedDate))}"
+            text = "Data Until: ${formatter.format(Date(selectedDate))}"
         )
     }
 }
 
-
-//@Composable
-//fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(200.dp)) {
-//    Canvas(modifier = modifier) {
-//        val total = data.values.sum()
-//        var startAngle = -90f // 扇形图的起始角度
-//
-//        data.forEach { (category, count) ->
-//            val sweepAngle = (count / total.toFloat()) * 360f // 扇形图的角度
-//            val color = when (category) { // 根据分类获取颜色
-//                "已读" -> colorRead
-//                "未读" -> colorUnread
-//                "在读" -> colorReading
-//                else -> Color.LightGray
-//            }
-//            drawArc(
-//                color = color, // 使用上面定义的颜色
-//                startAngle = startAngle,
-//                sweepAngle = sweepAngle,
-//                useCenter = true,
-//                size = Size(size.width, size.height) // 使用整个Canvas的尺寸
-//            )
-//            startAngle += sweepAngle // 下一个扇形的起始角度
-//        }
-//    }
-//}
 
 @Composable
 fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(150.dp)) {
@@ -202,12 +173,13 @@ fun PieChart(data: Map<String, Int>, modifier: Modifier = Modifier.size(150.dp))
         val holeRadius = radius * 0.6f // 中心空洞的半径
         var startAngle = -90f // 扇形图的起始角度
 
+
         data.forEach { (category, count) ->
             val sweepAngle = (count / total.toFloat()) * 360f // 扇形图的角度
             val color = when (category) { // 根据分类获取颜色
-                "Read" -> colorRead
-                "Unread" -> colorUnread
-                "Reading" -> colorReading
+                "have read" -> colorRead
+                "lay aside" -> colorUnread
+                "reading" -> colorReading
                 else -> Color.LightGray
             }
             drawArc(
@@ -251,9 +223,9 @@ fun Legend(data: Map<String, Int>, modifier: Modifier) {
                         .size(20.dp)
                         .background(
                             when (category) {
-                                "Read" -> colorRead
-                                "Unread" -> colorUnread
-                                "Reading" -> colorReading
+                                "have read" -> colorRead
+                                "lay aside" -> colorUnread
+                                "reading" -> colorReading
                                 else -> Color.LightGray
                             }
                         )
@@ -312,6 +284,14 @@ fun TimeRangeSelection(timeRange: String, onTimeRangeSelected: (String) -> Unit)
 
 @Composable
 fun AnalyticsPage() {
+    val bookViewModel: BookViewModel = viewModel()  // 获取ViewModel
+
+// 使用compose的方式观察LiveData
+    val bookCounts by bookViewModel.bookCounts.observeAsState(initial = mapOf(
+        "have read" to 0,
+        "lay aside" to 0,
+        "reading" to 0
+    ))
     // State for the time range selection for the bar chart.
     var timeRange by remember { mutableStateOf("Last 7 Days") }
 
@@ -326,7 +306,8 @@ fun AnalyticsPage() {
 
     Column(modifier = Modifier
         .fillMaxSize()
-        .padding(15.dp).verticalScroll(scrollState)
+        .padding(15.dp)
+        .verticalScroll(scrollState)
         ) { // 加上padding使内容不要紧贴屏幕边缘
         androidx.compose.material3.Text(
             text = "Reading Statistics",
@@ -365,14 +346,14 @@ fun AnalyticsPage() {
             modifier = Modifier.align(Alignment.Start) //
         )
         Spacer(modifier = Modifier.height(60.dp)) // 标题和扇形图之间的间隔
-        BookStatusPieChart(data = bookShelfData)
+        BookStatusPieChart(data = bookCounts)
     }
 }
 
 
 @Composable
 fun AnalyticsScreen(navController: NavController, modifier: Modifier = Modifier) {
-    // 可以在这里添加你之前创建的 BarChart 和 PieChart 组件
+
     AnalyticsPage()
 }
 

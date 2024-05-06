@@ -1,12 +1,39 @@
 package com.example.BookRecord
 
-import androidx.room.*
 import androidx.lifecycle.LiveData
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+
+
+// 定义 BookDao 接口，用于访问与 Book 实体相关的数据库操作
+
+@Dao
+interface UserDao {
+    // 插入用户，如果用户已存在则忽略
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insert(user: User)
+
+    // 根据UID查询用户
+    @Query("SELECT * FROM users WHERE uid = :uid")
+    fun findUserById(uid: String): User?
+
+    // 可选：获取所有用户
+    @Query("SELECT * FROM users")
+    fun getAllUsers(): List<User>
+
+    // 可选：删除用户
+    @Query("DELETE FROM users WHERE uid = :uid")
+    fun deleteUserById(uid: String)
+}
 
 @Dao
 interface BookDao {
-    @Query("SELECT * FROM books")
-    fun getAllBooks(): LiveData<List<Book>>
+    @Query("SELECT * FROM books WHERE userId = :userId")
+    fun getAllBooks(userId: String): LiveData<List<Book>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBook(book: Book)

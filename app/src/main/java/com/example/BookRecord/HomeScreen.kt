@@ -3,12 +3,6 @@ package com.example.BookRecord
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,8 +23,8 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -38,32 +32,41 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.firebase.auth.FirebaseAuth
 import org.threeten.bp.LocalDate
 import org.threeten.bp.format.DateTimeFormatter
 import org.threeten.bp.temporal.ChronoUnit
 
-
 @Composable
 fun HomeScreen(
+    googleSignInClient: GoogleSignInClient,
     navController: NavController,
+    //auth: FirebaseAuth, // 传入FirebaseAuth实例
     modifier: Modifier = Modifier,
 ){
     // 鼠标的焦点
@@ -75,7 +78,6 @@ fun HomeScreen(
 
     // 获取正在读的书籍列表
     val readingBooks by bookViewModel.readingBooks.observeAsState(initial = emptyList())
-
 
     // 搜索框和列表布局
     // 使得 Column 可点击，并在点击时清除焦点
@@ -119,13 +121,21 @@ fun HomeScreen(
                 }
                 Column(modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally){
-                    // 使用一个图标，表示设置
-                    Icon(
-                        imageVector = Icons.Filled.Logout,
-                        contentDescription = "Logout",
-                        tint = Color(0xFF6650a4),
-                        modifier = Modifier.size(40.dp) // 根据需要调整图标的大小
-                    )
+                    IconButton(
+                        onClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            googleSignInClient.signOut()
+                            navController.navigate("LoginScreen"){
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = "Setting",
+                            tint = Color(0xFF6650a4),
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                 }
             }
 
@@ -158,8 +168,6 @@ fun HomeScreen(
     }
 
 }
-
-
 
 @Composable
 fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel) {
@@ -221,7 +229,8 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                         .width(100.dp),
                                     contentPadding = PaddingValues(),
                                     shape = RoundedCornerShape(5.dp),
-                                    onClick ={ navController.navigate("EditNotesScreen/${book.id}")},
+                                    onClick ={navController.navigate("EditNotesScreen/${book.id}")},
+                                    //navController.navigate("EditNotesScreen/${book.id}")
                                 ) {
                                     Text(text = "notes", fontSize = 15.sp)
                                     Icon(
@@ -408,5 +417,6 @@ fun ExpandedDropdownMenuExample(bookViewModel: BookViewModel, book: Book) {
         }
     }
 }
+
 
 

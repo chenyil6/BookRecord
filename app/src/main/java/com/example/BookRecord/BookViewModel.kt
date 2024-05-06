@@ -3,51 +3,67 @@ package com.example.BookRecord
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.map
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalDate
 
 enum class BookStatus {
-    READING,
-    READ,
-    ON_HOLD
+    READING, // 正在阅读
+    READ, // 已阅读
+    ON_HOLD // 搁置
 }
 
-
+//在类的初始化块中，通过传入应用程序的 Application 对象，获取了数据库的访问对象 bookDao 和 noteDao
 class BookViewModel(application: Application) : AndroidViewModel(application) {
     private val bookDao = AppDatabase.getDatabase(application).bookDao()
     private val noteDao = AppDatabase.getDatabase(application).noteDao()
-    private val bookRepository: BookRepository
-    private val noteRepository: NoteRepository
+    private val bookRepository = BookRepository(bookDao, viewModelScope)
+    private val noteRepository = NoteRepository(noteDao)
 
-    // 使用LiveData来观察数据变化
-    val allBooks: LiveData<List<Book>>
-    val readingBooks: LiveData<List<Book>>
-    val completeBooks: LiveData<List<Book>>
-    val layasideBooks: LiveData<List<Book>>
+    var currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
+
+    val allBooks: LiveData<List<Book>> = bookRepository.allBooks
+    val bookCounts = MutableLiveData<Map<String, Int>>()
+
+    // 使用 MediatorLiveData 替代 Transformations.map
+    val readingBooks = MediatorLiveData<List<Book>>()
+    val completeBooks = MediatorLiveData<List<Book>>()
+    val layasideBooks = MediatorLiveData<List<Book>>()
 
     init {
-        bookRepository = BookRepository(bookDao)
-        noteRepository = NoteRepository(noteDao)
-
-        allBooks = bookRepository.allBooks
-
-        readingBooks = allBooks.map { books ->
-            books.filter { it.status == BookStatus.READING }
+        readingBooks.addSource(allBooks) { books ->
+            readingBooks.value = books.filter { it.status == BookStatus.READING }
         }
 
-        completeBooks = allBooks.map { books -> // 注意属性名称修正
-            books.filter { it.status == BookStatus.READ }
+        completeBooks.addSource(allBooks) { books ->
+            completeBooks.value = books.filter { it.status == BookStatus.READ }
         }
 
-        layasideBooks = allBooks.map { books ->
-            books.filter { it.status == BookStatus.ON_HOLD }
+        layasideBooks.addSource(allBooks) { books ->
+            layasideBooks.value = books.filter { it.status == BookStatus.ON_HOLD }
+        }
+        // Update book counts
+        updateBookCounts()
+    }
+
+
+    private fun updateBookCounts() {
+        val counts = mutableMapOf("have read" to 0, "lay aside" to 0, "reading" to 0)
+        allBooks.observeForever { books ->
+            counts["have read"] = books.count { it.status == BookStatus.READ }
+            counts["lay aside"] = books.count { it.status == BookStatus.ON_HOLD }
+            counts["reading"] = books.count { it.status == BookStatus.READING }
+            bookCounts.value = counts
         }
     }
 
+    // 添加新书籍
     fun addBook(bookTitle: String, bookImage: String, author: String, pages: String, status: BookStatus, readPage: String, press: String,startTime: LocalDate) = viewModelScope.launch {
         val newBook = Book(
+            userId = currentUserUID ?: "",//确保不会空，处理未登陆的情况
             title = bookTitle,
             image = bookImage,
             author = author,
@@ -60,24 +76,30 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         bookRepository.insert(newBook)
     }
 
+    // 删除书籍
     fun deleteBook(book: Book) = viewModelScope.launch {
         bookRepository.delete(book)
     }
 
+    // 更新书籍状态
     fun updateBookStatus(book: Book, newStatus: BookStatus) = viewModelScope.launch {
         book.status = newStatus
         bookRepository.update(book)
     }
 
+    // 更新已阅读页数
     fun updateBookReadPage(book: Book, readPage: String) = viewModelScope.launch {
         book.readpage = readPage // 确保属性名称与你的 Book 类一致
         bookRepository.update(book)
     }
 
-    // 新增方法：获取指定书籍的笔记数量
+    // 获取指定书籍的笔记数量
     fun getNoteCountByBookId(bookId: Int): LiveData<Int> {
         return noteRepository.getNoteCountByBookId(bookId)
     }
 }
 
+
+//定义了一个名为BookViewModel的view model类，用于管理书籍相关的数据和操作
+//
 

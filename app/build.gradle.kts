@@ -2,6 +2,9 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")  // 确保这行没有错误
+    id("kotlin-kapt")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -62,6 +65,8 @@ dependencies {
     implementation ("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.material:material:1.6.3")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.firebase:firebase-auth-ktx:21.1.0")
+    implementation("com.google.firebase:firebase-database-ktx:20.1.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -77,5 +82,20 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.6.3")
 
     implementation("com.jakewharton.threetenabp:threetenabp:1.3.1")
-
+    implementation("com.google.android.gms:play-services-auth:20.1.0")
+    implementation("com.google.dagger:hilt-android:2.38.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.38.1")
+    implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
+    // 如果使用 AndroidX 的 ViewModel
+    //implementation ("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
+    //kapt ("androidx.hilt:hilt-compiler:1.0.0-alpha03")
+    // Add the dependency for the Realtime Database library
+    // When NOT using the BoM, you must specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-database-ktx:20.2.2")
+    // Annotation processor
+    kapt ("androidx.lifecycle:lifecycle-compiler:2.3.1")
+    implementation ("androidx.lifecycle:lifecycle-extensions:2.2.0")
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.2.0")
 }
+
+

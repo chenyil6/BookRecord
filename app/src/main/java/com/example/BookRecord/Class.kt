@@ -6,18 +6,35 @@ import androidx.room.PrimaryKey
 import org.threeten.bp.LocalDate
 
 
-@Entity(tableName = "books")
+@Entity(tableName = "users")
+data class User(
+    @PrimaryKey val uid: String
+
+)
+@Entity(
+    tableName = "books",
+    foreignKeys = [
+        ForeignKey(
+            entity = User::class,
+            parentColumns = ["uid"],
+            childColumns = ["userId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
 data class Book(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    var userId: String, // 添加这个字段来连接User
     var title: String,
     var image: String,
     var author: String,
     var pages: String,
-    var status: BookStatus,  // 注意: Room默ß认不支持枚举。你需要自定义类型转换器(TypeConverter)来处理枚举。
+    var status: BookStatus,
     var readpage: String,
-    var press:String,
-    var startTime: LocalDate // 使用 LocalDate
+    var press: String,
+    var startTime: LocalDate
 )
+
 
 @Entity(
     foreignKeys = [

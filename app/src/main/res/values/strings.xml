@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BookRecord</string>
+    <string name="default_web_client_id">858405830070-j3jpmljlvegrp4l4qsvha6ehrf9e6ae7.apps.googleusercontent.com</string>
+
 </resources>
