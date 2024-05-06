@@ -23,8 +23,8 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -130,8 +130,8 @@ fun HomeScreen(
                             }
                         }) {
                         Icon(
-                            imageVector = Icons.Filled.Logout,
-                            contentDescription = "Logout",
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = "Setting",
                             tint = Color(0xFF6650a4),
                             modifier = Modifier.size(40.dp)
                         )

@@ -77,9 +77,9 @@ fun BarChart(data: List<Int>, modifier: Modifier = Modifier
 
         data.forEachIndexed { index, count ->
             val barHeight = size.height * (count / maxCount.toFloat())
-            val barTopLeft = Offset((barWidth + barWidth * 2 * index), size.height - barHeight)
+            val barTopLeft = Offset((barWidth / 2 + barWidth * 2 * index), size.height - barHeight)
             drawRect(
-                color = colorPrimary, // 假设使用蓝色表示
+                color = colorPrimary, //
                 topLeft = barTopLeft,
                 size = Size(barWidth, barHeight)
             )
@@ -353,7 +353,7 @@ fun AnalyticsPage() {
 
 @Composable
 fun AnalyticsScreen(navController: NavController, modifier: Modifier = Modifier) {
-    // 可以在这里添加你之前创建的 BarChart 和 PieChart 组件
+
     AnalyticsPage()
 }
 

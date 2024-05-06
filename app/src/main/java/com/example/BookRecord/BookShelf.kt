@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -95,8 +95,8 @@ fun BookShelf(
             ) {
                 // 使用一个图标，表示设置
                 Icon(
-                    imageVector = Icons.Filled.Logout,
-                    contentDescription = "Logout",
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Setting",
                     tint = Color(0xFF6650a4),
                     modifier = Modifier.size(40.dp) // 根据需要调整图标的大小
                 )
