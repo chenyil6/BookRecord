@@ -36,7 +36,8 @@ data class UserInfo(
     val email: String,
     val username: String?,
     val gender: String?,
-    val phoneNumber: String?
+    val phoneNumber: String?,
+    val birthdate: String?
 )
 
 class UserRepository(private val appDatabase: AppDatabase) {
