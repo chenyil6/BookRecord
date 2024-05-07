@@ -43,6 +43,11 @@ class RegisterViewModel(private val userRepository: UserRepository) : ViewModel(
             }
         }
     }
+
+    fun resetLoginStatus() {
+        // 逻辑来重置或清除登录状态
+        _loginStatus.value = false
+    }
 }
 
 

@@ -116,7 +116,6 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                //auth.signOut()
                 if (!emailError && !passwordError) {
                     viewModel.loginUser(email, password)
                 }
