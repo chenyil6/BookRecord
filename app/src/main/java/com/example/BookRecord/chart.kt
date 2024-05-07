@@ -27,6 +27,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +47,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.BookRecord.BookViewModel
+import com.example.BookRecord.ReadingRecordDao
+import com.example.BookRecord.ReadingRecordViewModel
 import java.time.Instant
 import java.util.Date
 import java.util.Locale
+import org.threeten.bp.LocalDate
 
 // Define your color constants
 val colorPrimary = Color(0xFF8C73B8)
@@ -59,24 +63,22 @@ val colorReading = Color(0xFF9EE0C2) // Blue
 val colorBackground = Color(0xFFFFFFFF) // White or any other background color
 
 // Sample data for the bar chart, showing pages read each day.
-val readingData7Days = listOf(5, 2, 7, 3, 5, 4, 13) // 近7天
-val readingData15Days = List(15) { (1..20).random() } // 随机生成近30天的数据
+//val readingData7Days = listOf(5, 2, 7, 3, 5, 4, 13) // 近7天
+//val readingData15Days = List(15) { (1..20).random() } // 随机生成近30天的数据
 
 // Sample data for the pie chart, showing book status distribution.
 //val bookShelfData = mapOf("have read" to 33, "lay aside" to 12, "reading" to 6)
 
-
-
 @Composable
-fun BarChart(data: List<Int>, modifier: Modifier = Modifier
+fun BarChart(data: List<ReadingRecordDao.DailyReading>, modifier: Modifier = Modifier
     .fillMaxWidth()
     .height(200.dp)) {
     Canvas(modifier = modifier) {
-        val maxCount = data.maxOrNull() ?: 1 // 保证除数不为零
+        val maxCount = data.maxOfOrNull { it.totalPages } ?: 1 // 保证除数不为零
         val barWidth = size.width / (data.size * 2f)
 
-        data.forEachIndexed { index, count ->
-            val barHeight = size.height * (count / maxCount.toFloat())
+        data.forEachIndexed { index, dailyReading ->
+            val barHeight = size.height * (dailyReading.totalPages.toFloat() / maxCount)
             val barTopLeft = Offset((barWidth / 2 + barWidth * 2 * index), size.height - barHeight)
             drawRect(
                 color = colorPrimary, //
@@ -91,7 +93,7 @@ fun BarChart(data: List<Int>, modifier: Modifier = Modifier
                 textAlign = android.graphics.Paint.Align.CENTER // 文本对齐方式
             }
             drawContext.canvas.nativeCanvas.drawText(
-                count.toString(), // 要绘制的文本
+                dailyReading.totalPages.toString(), // 要绘制的文本
                 barTopLeft.x + barWidth / 2, // 文本的x坐标，使其居中于柱子之上
                 barTopLeft.y - 5f, // 文本的y坐标，略高于柱子顶部
                 textPaint // 使用的画笔
@@ -102,66 +104,17 @@ fun BarChart(data: List<Int>, modifier: Modifier = Modifier
 
 
 @RequiresApi(0)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DisplayDatePicker() {
-    val calendar = android.icu.util.Calendar.getInstance()
-    calendar.set(2024, 0, 1) // month (0) is January
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = Instant.now().toEpochMilli()
-    )
-    var showDatePicker by remember {
-        mutableStateOf(false)
-    }
-    var selectedDate by remember {
-        mutableStateOf(calendar.timeInMillis)
-    }
+fun DisplayTodayDate() {
     Column(modifier = Modifier.padding(0.dp)) {
-        if (showDatePicker) {
-            DatePickerDialog(
-                onDismissRequest = {
-                    showDatePicker = false
-                },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(onClick = {
-                        showDatePicker = false
-                        selectedDate = datePickerState.selectedDateMillis!!
-                        //selectedDateMillis!! null safety because type declared as Long? selectedDate = datePickerState.selectedDateMillis!!
-                    }) {
-                        androidx.compose.material3.Text(text = "OK")
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = {
-                        showDatePicker = false
-                    }) {
-                        androidx.compose.material3.Text(text = "Cancel")
-                    }
-                }
-            ) //end of dialog
-            { //still column scope
-                DatePicker(
-                    state = datePickerState
-                )
-            }
-        }// end of if
-        androidx.compose.material3.Button(
-            onClick = {
-                showDatePicker = true
-            },
-            shape = RectangleShape,// 这将按钮设为方形
-            modifier = Modifier.size(160.dp,35.dp)
-        ) {
-            androidx.compose.material3.Text(text = "End Date Selector")
-        }
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.ROOT)
+        val formatter = org.threeten.bp.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
         Spacer(modifier = Modifier.height(10.dp))
         androidx.compose.material3.Text(
-
-            text = "Data Until: ${formatter.format(Date(selectedDate))}"
+            text = "Data Until: ${LocalDate.now().format(formatter)}"
         )
     }
 }
+
 
 
 @Composable
@@ -285,6 +238,7 @@ fun TimeRangeSelection(timeRange: String, onTimeRangeSelected: (String) -> Unit)
 @Composable
 fun AnalyticsPage() {
     val bookViewModel: BookViewModel = viewModel()  // 获取ViewModel
+    val readingRecordViewModel: ReadingRecordViewModel = viewModel()  // 获取ReadingRecordViewModel
 
 // 使用compose的方式观察LiveData
     val bookCounts by bookViewModel.bookCounts.observeAsState(initial = mapOf(
@@ -292,16 +246,24 @@ fun AnalyticsPage() {
         "lay aside" to 0,
         "reading" to 0
     ))
+    val readPagesLast7Days by readingRecordViewModel.readPagesLast7Days.observeAsState(emptyList())
+    val readPagesLast15Days by readingRecordViewModel.readPagesLast15Days.observeAsState(emptyList())
+
     // State for the time range selection for the bar chart.
     var timeRange by remember { mutableStateOf("Last 7 Days") }
 
+
     // Function to calculate total pages read in the selected time range.
-    fun calculateTotalPages(): Int {
-        return if (timeRange == "Last 7 Days") readingData7Days.sum() else readingData15Days.sum()
+    // Function to calculate total pages read in the selected time range.
+    fun calculateTotalPages(readings: List<ReadingRecordDao.DailyReading>): Int {
+        return readings.sumOf { it.totalPages }
     }
 
     // State for the total pages read.
-    val totalPages by remember { mutableStateOf(calculateTotalPages()) }
+    //val totalPages by derivedStateOf { mutableStateOf(calculateTotalPages(if (timeRange == "Last 7 Days") readPagesLast7Days else readPagesLast15Days)) }
+    val totalPages by derivedStateOf {
+        calculateTotalPages(if (timeRange == "Last 7 Days") readPagesLast7Days else readPagesLast15Days)
+    }
     val scrollState = rememberScrollState()//创建可滚动状态
 
     Column(modifier = Modifier
@@ -325,12 +287,12 @@ fun AnalyticsPage() {
         )
         Spacer(modifier = Modifier.height(15.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            DisplayDatePicker()
+            DisplayTodayDate()
             Spacer(modifier = Modifier.weight(1f)) // 这个Spacer会占据所有可用空间
             TimeRangeSelection(timeRange) { selectedRange ->timeRange = selectedRange}
         }
         Spacer(modifier = Modifier.height(15.dp)) // 添加间隔
-        BarChart(if (timeRange == "Last 7 Days") readingData7Days else readingData15Days)
+        BarChart(data = if (timeRange == "Last 7 Days") readPagesLast7Days else readPagesLast15Days)
         Spacer(modifier = Modifier.height(15.dp)) // 添加间隔
         Text(
             text = " Total Pages Read in the $timeRange： $totalPages",

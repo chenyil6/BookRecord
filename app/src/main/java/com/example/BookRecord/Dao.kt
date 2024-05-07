@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import org.threeten.bp.LocalDate
 
 
 // 定义 BookDao 接口，用于访问与 Book 实体相关的数据库操作
@@ -68,4 +69,34 @@ interface NoteDao {
     @Query("DELETE FROM Note WHERE id = :noteId")
     suspend fun deleteById(noteId: Int)
 }
+
+
+@Dao
+interface ReadingRecordDao {
+    // 插入阅读记录
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReadingRecord(readingRecord: ReadingRecord)
+
+    // 查询特定用户在某日期的阅读页数
+    @Query("SELECT SUM(readPages) FROM reading_records WHERE userId = :userId AND date = :date")
+    fun getDailyReadPages(userId: String, date: LocalDate): LiveData<Int>
+
+    // 查询特定用户在指定日期范围内的阅读页数总和
+    @Query("SELECT SUM(readPages) FROM reading_records WHERE userId = :userId AND date BETWEEN :startDate AND :endDate")
+    fun getTotalReadPages(userId: String, startDate: LocalDate, endDate: LocalDate): LiveData<Int>
+
+    // 查询特定用户在指定日期范围内每天的阅读页数
+    @Query("SELECT date, SUM(readPages) as totalPages FROM reading_records WHERE userId = :userId AND date BETWEEN :startDate AND :endDate GROUP BY date ORDER BY date")
+    fun getPagesReadPerDay(userId: String, startDate: LocalDate, endDate: LocalDate): LiveData<List<DailyReading>>
+
+    data class DailyReading(
+        val date: LocalDate,
+        val totalPages: Int
+    )
+
+}
+
+
+
+
 

@@ -75,7 +75,7 @@ fun HomeScreen(
     var searchText by remember { mutableStateOf("") }
 
     val bookViewModel = LocalBooksViewModel.current
-
+    val readingRecordViewModel = LocalreadingRecordViewModel.current
     // 获取正在读的书籍列表
     val readingBooks by bookViewModel.readingBooks.observeAsState(initial = emptyList())
 
@@ -156,21 +156,20 @@ fun HomeScreen(
                         modifier = Modifier.clickable { focusManager.clearFocus() }
                     )
                 },
-
                 )
 
             // 基于搜索文本过滤整个书籍列表，而不仅仅是标题
             val filteredBooks = readingBooks.filter { it.title.contains(searchText, ignoreCase = true) }
 
             // 将过滤后的书籍列表传递给 Books 函数
-            Books(navController, books = filteredBooks,bookViewModel = bookViewModel)
+            Books(navController, books = filteredBooks,bookViewModel = bookViewModel, readingRecordViewModel = readingRecordViewModel)
         }
     }
 
 }
 
 @Composable
-fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel) {
+fun Books(navController: NavController, books: List<Book>, modifier: Modifier = Modifier,bookViewModel:BookViewModel,readingRecordViewModel:ReadingRecordViewModel) {
     val context = LocalContext.current
 
     LazyColumn {
@@ -272,7 +271,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
                                     .weight(4f)
                             ){
                                 Row(){
-                                    InputPageNumberDialogButton(bookViewModel=bookViewModel,book = book)
+                                    InputPageNumberDialogButton(bookViewModel=bookViewModel,book = book,readingRecordViewModel = readingRecordViewModel)
                                     Box(modifier = Modifier.padding(top = 13.dp,start = 2.dp)){
                                         Text(text = "/${book.pages}", fontSize = 12.sp)
                                     }
@@ -288,7 +287,7 @@ fun Books(navController: NavController, books: List<Book>, modifier: Modifier = 
 }
 
 @Composable
-fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book) {
+fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book,readingRecordViewModel: ReadingRecordViewModel ) {
     var showDialog by remember { mutableStateOf(false) }
     var pageNumber by remember { mutableStateOf(book.readpage.toString()) }
 
@@ -338,11 +337,21 @@ fun InputPageNumberDialogButton(bookViewModel: BookViewModel, book: Book) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
-                            pageNumber.toIntOrNull()?.let {
-                                book.readpage = it.toString() // 这一行可能不再需要，因为在updateBookReadPage函数内部已经设置了
-                                bookViewModel.updateBookReadPage(book, it.toString())
+                            val oldPageNumber = book.readpage.toIntOrNull() ?: 0
+                            pageNumber.toIntOrNull()?.let { newPageNumber ->
+                                book.readpage = newPageNumber.toString()
+                                bookViewModel.updateBookReadPage(book, newPageNumber.toString())
+                                val pagesToAdd = newPageNumber - oldPageNumber
+                                if (pagesToAdd > 0) {
+                                    val newReadingRecord = ReadingRecord(
+                                        userId = book.userId,
+                                        date = LocalDate.now(),
+                                        readPages = pagesToAdd
+                                    )
+                                    readingRecordViewModel.insertReadingRecord(newReadingRecord)
+                                }
+                                showDialog = false
                             }
-                            showDialog = false // Hide dialog when done
                         }
                     ) {
                         Text("Done", fontSize = 15.sp)

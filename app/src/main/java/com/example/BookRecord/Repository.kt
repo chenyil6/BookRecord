@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
+import org.threeten.bp.LocalDate
 
 
 //这两个类的功能是作为应用的数据访问逻辑与数据访问对象（DAO）之间的中间层，提供清晰的API来处理数据。
@@ -73,4 +74,29 @@ class NoteRepository(private val noteDao: NoteDao) {
         noteDao.deleteById(noteId)
     }
 }
+
+class ReadingRecordRepository(private val readingRecordDao: ReadingRecordDao) {
+    private val currentUserId = MutableLiveData<String?>()
+
+    init {
+        // 添加 FirebaseAuth 状态监听器
+        FirebaseAuth.getInstance().addAuthStateListener { firebaseAuth ->
+            // 异步更新当前用户ID
+            val user = firebaseAuth.currentUser
+            currentUserId.postValue(user?.uid)
+        }
+    }
+
+    // 插入新的阅读记录
+    suspend fun insertReadingRecord(readingRecord: ReadingRecord) {
+        readingRecordDao.insertReadingRecord(readingRecord)
+    }
+
+    // 获取特定用户在指定日期范围内每天的阅读页数
+    fun getPagesReadPerDay(startDate: LocalDate, endDate: LocalDate): LiveData<List<ReadingRecordDao.DailyReading>> = currentUserId.switchMap { uid ->
+        if (uid == null) MutableLiveData(emptyList())
+        else readingRecordDao.getPagesReadPerDay(uid, startDate, endDate)
+    }
+}
+
 

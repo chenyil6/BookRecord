@@ -23,6 +23,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = BookRepository(bookDao, viewModelScope)
     private val noteRepository = NoteRepository(noteDao)
 
+
     var currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
 
     val allBooks: LiveData<List<Book>> = bookRepository.allBooks
@@ -97,6 +98,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     fun getNoteCountByBookId(bookId: Int): LiveData<Int> {
         return noteRepository.getNoteCountByBookId(bookId)
     }
+
 }
 
 

@@ -74,12 +74,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val notesViewModel: NoteViewModel by viewModels()
             val bookViewModel: BookViewModel by viewModels()
+            val readingRecordViewModel:ReadingRecordViewModel by viewModels()
 // 初始化 navController
             navController = rememberNavController()
             BookRecordTheme {
                 CompositionLocalProvider(
                     LocalNotesViewModel provides notesViewModel,
-                    LocalBooksViewModel provides bookViewModel
+                    LocalBooksViewModel provides bookViewModel,
+                    LocalreadingRecordViewModel provides readingRecordViewModel,
                 ) {
                     // 不再在这里声明 navController，直接传递上面初始化的 navController
                     AppNavigation(navController, registerViewModel, googleSignInClient, signInResultLauncher)

@@ -11,3 +11,8 @@ val LocalNotesViewModel = staticCompositionLocalOf<NoteViewModel> {
 val LocalBooksViewModel = staticCompositionLocalOf<BookViewModel> {
     error("No NotesViewModel provided")
 }
+
+
+val LocalreadingRecordViewModel = staticCompositionLocalOf<ReadingRecordViewModel> {
+    error("No NotesViewModel provided")
+}
