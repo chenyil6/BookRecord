@@ -6,9 +6,15 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.BookRecord.network.NetworkBookItem
+import com.example.BookRecord.network.NetworkBookResponse
+import com.example.BookRecord.network.RetrofitClient
+import com.example.BookRecord.network.RetrofitClient.booksApi
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalDate
+import retrofit2.Response
+
 
 enum class BookStatus {
     READING, // 正在阅读
@@ -22,7 +28,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     private val noteDao = AppDatabase.getDatabase(application).noteDao()
     private val bookRepository = BookRepository(bookDao, viewModelScope)
     private val noteRepository = NoteRepository(noteDao)
-
+    private val booksApi = RetrofitClient.booksApi
 
     var currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -33,6 +39,8 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     val readingBooks = MediatorLiveData<List<Book>>()
     val completeBooks = MediatorLiveData<List<Book>>()
     val layasideBooks = MediatorLiveData<List<Book>>()
+
+    val searchResults = MutableLiveData<List<Book>>()
 
     init {
         readingBooks.addSource(allBooks) { books ->
@@ -99,7 +107,36 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         return noteRepository.getNoteCountByBookId(bookId)
     }
 
+    //搜索逻辑，然后在AddBooks里面调用
+    fun searchBooks(query: String) = viewModelScope.launch {
+        try {
+            val response: Response<NetworkBookResponse> = booksApi.searchBooks(query)
+            if (response.isSuccessful && response.body() != null) {
+                searchResults.postValue(response.body()?.items?.map { it.toBook() } ?: emptyList())
+            } else {
+                searchResults.postValue(emptyList())
+            }
+        } catch (e: Exception) {
+            searchResults.postValue(emptyList())
+        }
+    }
+
+    private fun NetworkBookItem.toBook(): Book {
+        return Book(
+            userId ="the best",
+            title = this.volumeInfo.title ?: "No title available",
+            author = this.volumeInfo.authors?.joinToString(", ") ?: "Unknown",
+            image = this.volumeInfo.imageLinks?.thumbnail ?: "",
+            pages = this.volumeInfo.pageCount?.toString() ?: "N/A",
+            status = BookStatus.READING, // 假设状态
+            readpage = "0", // 默认已读页数
+            press = this.volumeInfo.publisher ?: "Unknown",
+            startTime = LocalDate.now() // 默认开始阅读时间
+        )
+    }
+
 }
+
 
 
 //定义了一个名为BookViewModel的view model类，用于管理书籍相关的数据和操作

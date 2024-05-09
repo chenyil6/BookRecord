@@ -1,74 +1,67 @@
 package com.example.BookRecord.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import android.content.Context
 
+object ThemeManager {
+    private const val THEME_PREF = "theme_preferences"
+    private const val THEME_KEY = "theme_color"
 
-private val DarkColorScheme = darkColorScheme(
-        primary = try2,
-    secondary = try2,
-        //secondary = PurpleGrey80,
-        tertiary = Pink80
+    fun getColorScheme(context: Context): ColorScheme {
+        val prefs = context.getSharedPreferences(THEME_PREF, Context.MODE_PRIVATE)
+        val colorName = prefs.getString(THEME_KEY, "purple")  // 默认为紫色
+        return when (colorName) {
+            "blue" -> BlueColorScheme
+            "green" -> GreenColorScheme
+            else -> PurpleColorScheme
+        }
+    }
+
+    fun setColorScheme(context: Context, colorName: String) {
+        val prefs = context.getSharedPreferences(THEME_PREF, Context.MODE_PRIVATE)
+        prefs.edit().putString(THEME_KEY, colorName).apply()
+    }
+}
+
+// 色彩方案定义
+val PurpleColorScheme = lightColorScheme(
+    primary = Purple40,
+    secondary = Purple80,
+    tertiary = PurpleGrey80,
+    background = LightPurple,
+    secondaryContainer = LightGreyPurple
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-       // primary = try1,
-    //secondary = try2,
-        secondary = PurpleGrey40,
-        tertiary = Pink40
+val BlueColorScheme = lightColorScheme(
+    primary = Blue,
+    secondary = BlueLight,
+    tertiary = BlueGrey,
+    background = LightBlue,
+    secondaryContainer = LightGreyBlue
+)
 
-        /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+val GreenColorScheme = lightColorScheme(
+    primary = Green,
+    secondary = GreenLight,
+    tertiary = GreenGrey,
+    background = LightGreen,
+    secondaryContainer = LightGreyGreen
 )
 
 @Composable
 fun BookRecordTheme(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        // Dynamic color is available on Android 12+
-        dynamicColor: Boolean = false,
-        content: @Composable () -> Unit
+    themeColorState: State<ColorScheme>,
+    content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-        }
-    }
+    val context = LocalContext.current
+    val colorScheme = remember { mutableStateOf(ThemeManager.getColorScheme(context)) }
 
     MaterialTheme(
-            colorScheme = colorScheme,
-            typography = Typography,
-            content = content
+        colorScheme = themeColorState.value,
+        typography = Typography,
+        content = content
     )
 }
+

@@ -2,7 +2,9 @@ package com.example.BookRecord
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -12,7 +14,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
@@ -20,16 +24,23 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -41,6 +52,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.BookRecord.ui.theme.AnalyticsScreen
 import com.example.BookRecord.ui.theme.BookRecordTheme
+import com.example.BookRecord.ui.theme.ThemeManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -70,22 +82,34 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
         setupGoogleSignIn()  // 调用新的方法来初始化谷歌登录
+        val sharedPreferences = getSharedPreferences("Settings", MODE_PRIVATE)
+        val isElderlyModeEnabled = sharedPreferences.getBoolean("elderly_mode_enabled", false)
 
         setContent {
             val notesViewModel: NoteViewModel by viewModels()
             val bookViewModel: BookViewModel by viewModels()
-            val readingRecordViewModel:ReadingRecordViewModel by viewModels()
+            val readingRecordViewModel: ReadingRecordViewModel by viewModels()
 // 初始化 navController
             navController = rememberNavController()
-            BookRecordTheme {
-                CompositionLocalProvider(
-                    LocalNotesViewModel provides notesViewModel,
-                    LocalBooksViewModel provides bookViewModel,
-                    LocalreadingRecordViewModel provides readingRecordViewModel,
-                ) {
-                    // 不再在这里声明 navController，直接传递上面初始化的 navController
-                    AppNavigation(navController, registerViewModel, googleSignInClient, signInResultLauncher)
-                }
+            val context = LocalContext.current
+            val themeColor = remember { mutableStateOf(ThemeManager.getColorScheme(context)) }
+            val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            val isElderlyModeEnabled = remember { mutableStateOf(sharedPreferences.getBoolean("elderly_mode_enabled", false)) }
+            BookRecordTheme(themeColor) {
+                    CompositionLocalProvider(
+                        LocalElderlyMode provides isElderlyModeEnabled,
+                        LocalNotesViewModel provides notesViewModel,
+                        LocalBooksViewModel provides bookViewModel,
+                        LocalreadingRecordViewModel provides readingRecordViewModel
+                    ) {
+                        // 不再在这里声明 navController，直接传递上面初始化的 navController
+                        AppNavigation(
+                            navController,
+                            registerViewModel,
+                            googleSignInClient,
+                            signInResultLauncher
+                        )
+                    }
             }
         }
     }
@@ -147,6 +171,7 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppNavigation(
@@ -157,104 +182,208 @@ fun AppNavigation(
     signInResultLauncher: ActivityResultLauncher<Intent>
 ) {
     val currentUser = observeUserAuthenticationState().value
+    val elderlyMode = LocalElderlyMode.current
     val startDestination = if (currentUser != null) "Book" else "LoginScreen"
 
     //val navController = rememberNavController()
     // 根据当前的导航目的地决定是否显示底部导航栏
-    val shouldShowBottomBar = navController.currentBackStackEntryAsState().value?.destination?.route !in listOf("notesScreen","EditNotesScreen","LoginScreen","AddBooks","Register")
-    Scaffold(
-        bottomBar = { if (shouldShowBottomBar) {
-            BottomNavigationBar(navController) }
-        }
-    ) { innerPadding ->
-        // 利用提供的 innerPadding 参数调整内容的内边距
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            //startDestination = "LoginScreen",
-            modifier = Modifier.padding(innerPadding) // 应用内边距
-        ) {
-            composable("LoginScreen") {
-                //LoginScreen(navController, modifier = Modifier.fillMaxSize())
-                LoginScreen(navController,signInResultLauncher,googleSignInClient, modifier = Modifier.fillMaxSize(), registerViewModel)
+    val shouldShowBottomBar =
+        navController.currentBackStackEntryAsState().value?.destination?.route !in listOf(
+            "notesScreen",
+            "EditNotesScreen",
+            "LoginScreen",
+            "AddBooks",
+            "Register",
+            "SettingScreen"
+        )
+    val context = LocalContext.current
+    val themeColor = remember { mutableStateOf(ThemeManager.getColorScheme(context)) }
+    LaunchedEffect(Unit) {
+        themeColor.value = ThemeManager.getColorScheme(context)
+    }
+    val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+    val isElderlyModeEnabled =
+        remember { mutableStateOf(sharedPreferences.getBoolean("elderly_mode_enabled", false)) }
+    CompositionLocalProvider(LocalElderlyMode provides isElderlyModeEnabled) {
 
-            }
-            composable("Register") {
-                // 获取一个与当前 Composable 生命周期相关联的 ViewModel 实例
-                //val registerViewModel: RegisterViewModel = viewModel()
+        BookRecordTheme(themeColor) {
+            Scaffold(
+                bottomBar = {
+                    if (shouldShowBottomBar) {
+                        BottomNavigationBar(navController)
+                    }
+                }
+            ) { innerPadding ->
+                // 利用提供的 innerPadding 参数调整内容的内边距
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    //startDestination = "LoginScreen",
+                    modifier = Modifier.padding(innerPadding) // 应用内边距
+                ) {
+                    composable("LoginScreen") {
+                        //LoginScreen(navController, modifier = Modifier.fillMaxSize())
+                        LoginScreen(
+                            navController,
+                            signInResultLauncher,
+                            googleSignInClient,
+                            modifier = Modifier.fillMaxSize(),
+                            registerViewModel
+                        )
 
-                // 调用 RegisterScreen 并将 viewModel 传递进去
-                RegisterScreen(navController, registerViewModel, modifier = Modifier.fillMaxSize())
-            }
-            composable("Book") { HomeScreen(googleSignInClient,navController,modifier = Modifier.fillMaxSize())}
-            composable("Bookshelf"){BookShelf(navController,modifier = Modifier.fillMaxSize()) }
-            composable("Analysis"){AnalyticsScreen(navController,modifier = Modifier.fillMaxSize())}
-            composable("notesScreen/{bookId}") { backStackEntry ->
-                // Extract the bookId parameter from the backStackEntry
-                val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
-                if (bookId == null) {
-                    // 无法解析bookId，根据你的应用逻辑处理这种情况
-                    // 比如返回上一屏或显示一个错误消息
-                } else {
-                    NotesScreen(navController, bookId, modifier = Modifier.fillMaxSize())
+                    }
+                    composable("Register") {
+                        // 获取一个与当前 Composable 生命周期相关联的 ViewModel 实例
+                        //val registerViewModel: RegisterViewModel = viewModel()
+
+                        // 调用 RegisterScreen 并将 viewModel 传递进去
+                        RegisterScreen(
+                            navController,
+                            registerViewModel,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    composable("Book") {
+                        HomeScreen(
+                            googleSignInClient,
+                            navController,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    composable("Bookshelf") {
+                        BookShelf(
+                            navController,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    composable("Analysis") {
+                        AnalyticsScreen(
+                            navController,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    composable("SettingScreen") {
+                        SettingScreen(
+                            navController,
+                            googleSignInClient,
+                        )
+                    }
+                    composable("notesScreen/{bookId}") { backStackEntry ->
+                        // Extract the bookId parameter from the backStackEntry
+                        val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
+                        if (bookId == null) {
+                            // 无法解析bookId，根据你的应用逻辑处理这种情况
+                            // 比如返回上一屏或显示一个错误消息
+                        } else {
+                            NotesScreen(navController, bookId, modifier = Modifier.fillMaxSize())
+                        }
+                    }
+                    composable("EditNotesScreen/{bookId}") { backStackEntry ->
+                        // Extract the bookId parameter from the backStackEntry
+                        val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
+                        if (bookId == null) {
+                            // 无法解析bookId，根据你的应用逻辑处理这种情况
+                            // 比如返回上一屏或显示一个错误消息
+                        } else {
+                            EditNotesScreen(
+                                navController,
+                                bookId,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    composable("AddBooks") { AddBookScreen(navController) }
                 }
             }
-            composable("EditNotesScreen/{bookId}") { backStackEntry ->
-                // Extract the bookId parameter from the backStackEntry
-                val bookId = backStackEntry.arguments?.getString("bookId")?.toIntOrNull()
-                if (bookId == null) {
-                    // 无法解析bookId，根据你的应用逻辑处理这种情况
-                    // 比如返回上一屏或显示一个错误消息
-                } else {
-                    EditNotesScreen(navController, bookId, modifier = Modifier.fillMaxSize())
-                }
-            }
-            composable("AddBooks"){ AddBookScreen(navController) }
         }
     }
 }
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
-    BottomNavigation(
-        backgroundColor = Color(0xFFCCC2DC) // 设置导航栏颜色
-    ) {
-        val items = listOf(
-            "Book" to Icons.Default.Book,
-            "Bookshelf" to Icons.Default.LibraryBooks,
-            "Analysis" to Icons.Default.BarChart,
-        )
-        items.forEach { (screen, icon) ->
-            BottomNavigationItem(
-                icon = { Icon(icon, contentDescription = screen) },
-                label = { Text(screen) },
-                selected = navController.currentDestination?.route == screen,
-                onClick = {
-                    navController.navigate(screen) {
-                        // 清理导航栈，避免导航栈过深
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
-                    }
-                }
-            )
+    val context = LocalContext.current
+    val themeColor = remember { mutableStateOf(ThemeManager.getColorScheme(context)) }
+    val elderlyMode = LocalElderlyMode.current
+    val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+// 使用remember保存老年模式的状态，并使用DisposableEffect监听SharedPreferences的变更
+    var isElderlyModeEnabled by remember { mutableStateOf(sharedPreferences.getBoolean("elderly_mode_enabled", false)) }
+    DisposableEffect(Unit) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "elderly_mode_enabled") {
+                isElderlyModeEnabled = sharedPreferences.getBoolean(key, false)
+            }
+        }
+        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener)
         }
     }
+        BookRecordTheme(themeColor) {
+                BottomNavigation(
+                    backgroundColor = MaterialTheme.colorScheme.secondary, // 设置导航栏颜色
+                    modifier = Modifier.height(if (isElderlyModeEnabled) 60.dp else 56.dp)
+                ) {
+                    val items = listOf(
+                        "Book" to Icons.Default.Book,
+                        "Bookshelf" to Icons.Default.LibraryBooks,
+                        "Analysis" to Icons.Default.BarChart,
+                    )
+                    items.forEach { (screen, icon) ->
+
+                        BottomNavigationItem(
+                            icon = {
+                                Icon(
+                                    icon,
+                                    contentDescription = screen,
+                                    modifier = Modifier.size(if (isElderlyModeEnabled) 30.dp else 24.dp)
+                                )
+                            },
+                            label = { Text(screen, fontSize = if (isElderlyModeEnabled) 18.sp else 14.sp) },
+                            selected = navController.currentDestination?.route == screen,
+                            onClick = {
+                                navController.navigate(screen) {
+                                    // 清理导航栈，避免导航栈过深
+                                    popUpTo(navController.graph.startDestinationId)
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                }
+
+
+        }
+
 }
 
 @Composable
 fun observeUserAuthenticationState(): State<FirebaseUser?> {
     val auth = FirebaseAuth.getInstance()
     val currentUser = remember { mutableStateOf(auth.currentUser) }
+    val context = LocalContext.current
+    val themeColor = remember { mutableStateOf(ThemeManager.getColorScheme(context)) }
+    val elderlyMode= LocalElderlyMode.current
+    val sharedPreferences = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+    val isElderlyModeEnabled =
+        remember { mutableStateOf(sharedPreferences.getBoolean("elderly_mode_enabled", false)) }
+    CompositionLocalProvider(LocalElderlyMode provides isElderlyModeEnabled) {
 
-    DisposableEffect(Unit) {
-        val listener = FirebaseAuth.AuthStateListener { auth ->
-            currentUser.value = auth.currentUser
-        }
-        auth.addAuthStateListener(listener)
-        onDispose {
-            auth.removeAuthStateListener(listener)
+        BookRecordTheme(themeColor) {
+            DisposableEffect(Unit) {
+                val listener = FirebaseAuth.AuthStateListener { auth ->
+                    currentUser.value = auth.currentUser
+                }
+                auth.addAuthStateListener(listener)
+                onDispose {
+                    auth.removeAuthStateListener(listener)
+                }
+            }
         }
     }
-
     return currentUser
+}
+
+@Composable
+fun ProvideElderlyMode(isElderlyModeEnabled: MutableState<Boolean>, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalElderlyMode provides isElderlyModeEnabled, content = content)
 }
