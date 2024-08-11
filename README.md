@@ -1,3 +1,6 @@
+> **PS:** This project is an assignment for Monash University's FIT5046 course. If you are currently enrolled in this course, please do not copy or use this project. The plagiarism detection system checks not only against your classmates' work but also against previous submissions and GitHub projects. Avoid the risk of serious academic misconduct and plagiarism.
+
+
 # BookRecord
 
 BookRecord is a dedicated reading tracker for those who cherish paper-based books. It bridges the gap for lovers of physical books by offering tools for manually tracking reading progress, logging notes, and analyzing reading habits over time.
